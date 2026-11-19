@@ -1602,7 +1602,12 @@ Calcula el costo base de producción unitario, el precio promedio en el mercado 
                 }
 
                 if (!response || !response.ok) {
-                    throw new Error("No se pudo completar el análisis");
+                    let apiErrorDetail = "";
+                    try {
+                        const errData = await response.json();
+                        apiErrorDetail = errData?.error?.message || "";
+                    } catch (e) {}
+                    throw new Error(apiErrorDetail || `HTTP_${response ? response.status : 'NET'}`);
                 }
 
                 const result = await response.json();
@@ -1610,26 +1615,83 @@ Calcula el costo base de producción unitario, el precio promedio en el mercado 
                 if (!jsonText) throw new Error("Respuesta vacía");
 
                 const parsed = JSON.parse(jsonText);
-                aiLastSuggestion = parsed;
-
-                document.getElementById('ai-res-title').textContent = parsed.conceptTitle;
-                document.getElementById('ai-res-badge').textContent = parsed.profitAdvantageLabel || "Precio Óptimo";
-                document.getElementById('ai-res-base').textContent = formatMoney(parsed.baseCostUnit, currency);
-                document.getElementById('ai-res-suggested').textContent = formatMoney(parsed.suggestedCompetitiveUnit, currency);
-                document.getElementById('ai-res-market').textContent = formatMoney(parsed.marketAverageUnit, currency);
-                document.getElementById('ai-res-analysis').textContent = parsed.comparativeJustification;
-                document.getElementById('ai-res-final-price').value = Number(parsed.suggestedCompetitiveUnit).toFixed(2);
-                updateAiBatchPreview();
-
-                resultBox.classList.remove('hidden');
-                showToast("Análisis comparativo listo");
+                renderAiComparisonResult(parsed, currency);
+                showToast("Análisis comparativo con IA listo");
             } catch (err) {
-                showToast("No se pudo conectar con el analizador. Verifica tu conexión o API Key.", "error");
+                // Respaldo inteligente local si no hay API Key configurada fuera del entorno
+                const fallbackEstimate = buildLocalSmartEstimate(size, material, qty, strategy, features);
+                renderAiComparisonResult(fallbackEstimate, currency);
+                if (!apiKey) {
+                    showToast("Cálculo inteligente local aplicado (agrega tu API Key si deseas visión IA)", "success");
+                } else {
+                    showToast("Aviso de API Key: usando estimador local de respaldo", "error");
+                }
             } finally {
                 btnAnalyze.disabled = false;
                 btnAnalyze.classList.remove('opacity-60');
                 loadingBox.classList.add('hidden');
             }
+        }
+
+        function renderAiComparisonResult(parsed, currency) {
+            aiLastSuggestion = parsed;
+            document.getElementById('ai-res-title').textContent = parsed.conceptTitle;
+            document.getElementById('ai-res-badge').textContent = parsed.profitAdvantageLabel || "Precio Óptimo";
+            document.getElementById('ai-res-base').textContent = formatMoney(parsed.baseCostUnit, currency);
+            document.getElementById('ai-res-suggested').textContent = formatMoney(parsed.suggestedCompetitiveUnit, currency);
+            document.getElementById('ai-res-market').textContent = formatMoney(parsed.marketAverageUnit, currency);
+            document.getElementById('ai-res-analysis').textContent = parsed.comparativeJustification;
+            document.getElementById('ai-res-final-price').value = Number(parsed.suggestedCompetitiveUnit).toFixed(2);
+            updateAiBatchPreview();
+            document.getElementById('ai-result-box').classList.remove('hidden');
+        }
+
+        function buildLocalSmartEstimate(size, material, qty, strategy, features) {
+            const text = `${size} ${material} ${features}`.toLowerCase();
+            let baseCost = 180;
+
+            // Detección inteligente por palabras clave y dimensiones
+            const dimMatch = size.match(/(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)/i);
+            const area = dimMatch ? (parseFloat(dimMatch[1]) * parseFloat(dimMatch[2])) : 300;
+
+            if (text.includes('mdf') || text.includes('láser') || text.includes('laser') || text.includes('madera')) {
+                const piecesPerSheet = Math.max(1, Math.floor(1536 / Math.max(25, area)));
+                const sheetShare = 65 / piecesPerSheet;
+                const laserTimeCost = Math.max(18, (area / 30) * 6);
+                const paintBonus = (text.includes('pintura') || text.includes('pintado') || text.includes('color')) ? (100 / Math.min(qty, 4)) : 0;
+                baseCost = Math.round(sheetShare + laserTimeCost + paintBonus);
+            } else if (text.includes('nfc') || text.includes('chip') || text.includes('tarjeta')) {
+                baseCost = text.includes('expositor') || text.includes('acrílico') ? 145 : 75;
+            } else if (text.includes('web') || text.includes('app') || text.includes('sistema') || text.includes('interfaz')) {
+                baseCost = text.includes('sistema') || text.includes('full') ? 9500 : 4200;
+            } else if (text.includes('video') || text.includes('animación') || text.includes('animacion')) {
+                baseCost = 650;
+            } else if (text.includes('logo') || text.includes('identidad') || text.includes('ilustración')) {
+                baseCost = 1600;
+            } else {
+                baseCost = Math.max(120, Math.round(area * 0.45));
+            }
+
+            // Ajuste por volumen
+            const volumeDiscount = qty >= 50 ? 0.82 : qty >= 20 ? 0.90 : qty >= 10 ? 0.95 : 1.0;
+            baseCost = Math.max(25, Math.round(baseCost * volumeDiscount));
+
+            const marginFactor = strategy === 'aggressive' ? 1.45 : strategy === 'premium' ? 2.15 : 1.75;
+            const marketFactor = 2.25;
+
+            const suggestedUnit = Math.round(baseCost * marginFactor);
+            const marketUnit = Math.round(baseCost * marketFactor);
+            const marginPct = Math.round(((suggestedUnit - baseCost) / suggestedUnit) * 100);
+
+            return {
+                conceptTitle: material ? `Proyecto ${material}${size ? ` (${size})` : ''}` : "Proyecto Personalizado Analizado",
+                technicalDescription: `Especificaciones: ${size || 'Medida estándar'} | Material/Tech: ${material || 'Personalizado'} | Detalles: ${features || 'Fabricación y acabado profesional según muestra'}.`,
+                baseCostUnit: baseCost,
+                suggestedCompetitiveUnit: suggestedUnit,
+                marketAverageUnit: marketUnit,
+                profitAdvantageLabel: `Margen est. ${marginPct}%`,
+                comparativeJustification: `Estimación calculada por dimensiones (${size || 'estándar'}), material (${material || 'general'}) y volumen de ${qty} unidad(es). El precio sugerido mantiene un margen bruto aproximado del ${marginPct}% posicionándose por debajo del promedio comercial.`
+            };
         }
 
         function updateAiBatchPreview() {
@@ -2072,32 +2134,63 @@ Calcula el costo base de producción unitario, el precio promedio en el mercado 
 
         // --- EXPORTACIÓN A PDF ---
         function exportToPDF() {
-            const element = document.getElementById('quote-document');
+            const sourceElement = document.getElementById('quote-document');
             const quoteNum = document.getElementById('quote-number').value.trim() || 'Cotizacion';
             const clientName = document.getElementById('client-name').value.trim().replace(/[^a-zA-Z0-9]/g, '_') || 'Cliente';
             const filename = `${quoteNum}_${clientName}.pdf`;
 
-            const previewPanel = document.getElementById('preview-panel');
-            const wasHidden = previewPanel.classList.contains('hidden');
-            if (wasHidden) previewPanel.classList.remove('hidden');
-
             showToast("Generando archivo PDF...");
 
+            // Crear contenedor temporal aislado en (0,0) para evitar páginas en blanco por scroll o contenedores ocultos en móvil
+            const printWrapper = document.createElement('div');
+            printWrapper.style.position = 'fixed';
+            printWrapper.style.top = '0';
+            printWrapper.style.left = '0';
+            printWrapper.style.width = '816px'; // Ancho Carta estándar a 96 DPI
+            printWrapper.style.backgroundColor = '#ffffff';
+            printWrapper.style.zIndex = '-9999';
+            printWrapper.style.pointerEvents = 'none';
+
+            const clonedDoc = sourceElement.cloneNode(true);
+            clonedDoc.style.width = '100%';
+            clonedDoc.style.boxShadow = 'none';
+            clonedDoc.style.border = 'none';
+            clonedDoc.style.borderRadius = '0';
+            clonedDoc.style.margin = '0';
+            clonedDoc.style.padding = '36px';
+            clonedDoc.style.backgroundColor = '#ffffff';
+            clonedDoc.style.color = '#1e293b';
+
+            printWrapper.appendChild(clonedDoc);
+            document.body.appendChild(printWrapper);
+
             const opt = {
-                margin: [0.4, 0.4, 0.4, 0.4],
+                margin: [0.25, 0.25, 0.25, 0.25],
                 filename: filename,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: 816
+                },
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            html2pdf().set(opt).from(element).save().then(() => {
-                if (wasHidden) previewPanel.classList.add('hidden');
-                showToast("PDF descargado con éxito");
-            }).catch(() => {
-                if (wasHidden) previewPanel.classList.add('hidden');
-                showToast("Error al generar PDF. Intenta usando el botón Imprimir.", "error");
-            });
+            // Breve espera para asegurar renderizado de fuentes e imágenes clonadas
+            setTimeout(() => {
+                html2pdf().set(opt).from(clonedDoc).save().then(() => {
+                    document.body.removeChild(printWrapper);
+                    showToast("PDF descargado con éxito");
+                }).catch(() => {
+                    if (document.body.contains(printWrapper)) {
+                        document.body.removeChild(printWrapper);
+                    }
+                    showToast("Error al generar PDF. Intenta usando el botón Imprimir.", "error");
+                });
+            }, 150);
         }
 
         // --- NAVEGACIÓN MÓVIL ---
