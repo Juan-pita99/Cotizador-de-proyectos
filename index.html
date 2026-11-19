@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CotizadorPro - Generador Ejecutivo en Dorado, Azul Marino & Negro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf.js para exportación directa a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #0f172a 0%, #090d16 55%, #030712 100%);
+        }
+
+        /* Estilos específicos para impresión y generación de PDF */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #quote-document, #quote-document * {
+                visibility: visible;
+            }
+            #quote-document {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        /* Scrollbar personalizado en tonos azul marino y dorado */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 9999px;
+            border: 1px solid #d4af3744;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4af37;
+        }
+
+        /* Animación suave para notificaciones y modales */
+        @keyframes slideIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-enter {
+            animation: slideIn 0.25s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="text-slate-200 antialiased min-h-screen flex flex-col">
+
+    <!-- Barra Superior (Navegación y Acciones Rápidas) -->
+    <header class="bg-slate-950/90 backdrop-blur-md border-b border-amber-500/25 sticky top-0 z-30 no-print shadow-lg shadow-black/40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-br from-amber-300 via-yellow-500 to-amber-600 text-slate-950 p-2 rounded-xl shadow-md shadow-amber-500/20 border border-amber-200/50">
+                    <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-white text-lg leading-tight tracking-tight">Cotizador<span class="text-amber-400">Pro</span></h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Presupuestos creativos, tech & fabricación láser</p>
+                </div>
+            </div>
+
+            <!-- Selector de Vista Móvil -->
+            <div class="flex lg:hidden bg-slate-900 p-1 rounded-xl border border-amber-500/25">
+                <button id="btn-tab-edit" onclick="switchMobileTab('edit')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 text-slate-950 shadow-xs transition-all">
+                    Editar
+                </button>
+                <button id="btn-tab-preview" onclick="switchMobileTab('preview')" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-300 hover:text-amber-300 transition-all">
+                    Vista Previa
+                </button>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button onclick="openSpecialtyModal('ai_vision')" title="Cotizador Inteligente con Imagen IA" class="p-2.5 sm:px-3.5 sm:py-2 text-sm font-semibold text-amber-300 bg-slate-900/90 hover:bg-slate-800 border border-amber-400/50 rounded-xl transition-all flex items-center gap-2 shadow-sm">
+                    <i data-lucide="scan-search" class="w-4 h-4 text-amber-400"></i>
+                    <span class="hidden md:inline">Cotizar con IA</span>
+                </button>
+                <button onclick="saveBusinessProfile()" title="Guardar datos de mi negocio" class="p-2.5 sm:px-3.5 sm:py-2 text-sm font-medium text-slate-200 bg-slate-900/90 border border-slate-700 hover:border-amber-500/40 rounded-xl hover:bg-slate-800 transition-colors flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4 text-amber-400"></i>
+                    <span class="hidden md:inline">Guardar Perfil</span>
+                </button>
+                <button onclick="resetQuote()" title="Nueva cotización en blanco" class="p-2.5 sm:px-3.5 sm:py-2 text-sm font-medium text-slate-200 bg-slate-900/90 border border-slate-700 hover:border-amber-500/40 rounded-xl hover:bg-slate-800 transition-colors flex items-center gap-2">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4 text-amber-400"></i>
+                    <span class="hidden md:inline">Limpiar</span>
+                </button>
+                <button onclick="exportToPDF()" class="px-3.5 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 border border-amber-200/60 rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4 text-slate-950"></i>
+                    <span>Descargar PDF</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal (2 Columnas en Desktop) -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            <!-- COLUMNA IZQUIERDA: FORMULARIO DE EDICIÓN -->
+            <div id="editor-panel" class="lg:col-span-6 space-y-6 no-print">
+
+                <!-- 1. Identidad de tu Negocio -->
+                <section class="bg-slate-900/85 backdrop-blur-sm rounded-2xl border border-amber-500/25 shadow-xl shadow-black/40 overflow-hidden">
+                    <div class="px-5 py-4 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950/80 border-b border-amber-500/20 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <i data-lucide="building-2" class="w-5 h-5 text-amber-400"></i>
+                            <h2 class="font-semibold text-white">1. Datos de tu Negocio</h2>
+                        </div>
+                        <span class="text-xs text-amber-400/90 font-medium">Perfil ejecutivo</span>
+                    </div>
+                    
+                    <div class="p-5 space-y-4">
+                        <!-- Carga de Logo y Color de Marca -->
+                        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                            <div class="relative group">
+                                <label for="logo-upload" class="cursor-pointer flex flex-col items-center justify-center w-28 h-28 rounded-2xl border-2 border-dashed border-amber-500/40 hover:border-amber-400 bg-slate-950/70 hover:bg-slate-900 transition-all overflow-hidden">
+                                    <img id="logo-preview-thumb" src="" alt="Logo" class="hidden w-full h-full object-contain p-2 bg-white/95 rounded-xl">
+                                    <div id="logo-placeholder" class="flex flex-col items-center text-center p-2">
+                                        <i data-lucide="image-plus" class="w-6 h-6 text-amber-400 mb-1"></i>
+                                        <span class="text-[11px] font-medium text-slate-300">Subir Logo</span>
+                                    </div>
+                                </label>
+                                <input id="logo-upload" type="file" accept="image/*" class="hidden" onchange="handleLogoUpload(event)">
+                                <button id="btn-remove-logo" onclick="removeLogo()" class="hidden absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600" title="Quitar logo">
+                                    <i data-lucide="x" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+
+                            <div class="flex-1 w-full space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Nombre de tu Empresa / Estudio</label>
+                                    <input type="text" id="biz-name" oninput="updatePreview()" placeholder="Ej. Estudio Creativo & Lab" class="w-full px-3.5 py-2 text-sm text-white placeholder-slate-500 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none bg-slate-950/80">
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1">
+                                        <label class="block text-xs font-medium text-slate-300 mb-1">Color de Acento del Documento</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="color" id="brand-color" value="#b48a28" oninput="updatePreview()" class="w-9 h-9 rounded-lg border border-amber-500/40 cursor-pointer p-0.5 bg-slate-950">
+                                            <div class="flex gap-1.5">
+                                                <button type="button" onclick="setBrandColor('#b48a28')" title="Dorado Clásico" class="w-6 h-6 rounded-full bg-amber-500 border border-amber-200/60 shadow-sm"></button>
+                                                <button type="button" onclick="setBrandColor('#0f172a')" title="Azul Marino Profundo" class="w-6 h-6 rounded-full bg-slate-900 border border-amber-400/60 shadow-sm"></button>
+                                                <button type="button" onclick="setBrandColor('#1e3a8a')" title="Azul Real Ejecutivo" class="w-6 h-6 rounded-full bg-blue-900 border border-amber-400/50 shadow-sm"></button>
+                                                <button type="button" onclick="setBrandColor('#111827')" title="Negro Carbón" class="w-6 h-6 rounded-full bg-gray-900 border border-amber-300/60 shadow-sm"></button>
+                                                <button type="button" onclick="setBrandColor('#d97706')" title="Ámbar Dorado" class="w-6 h-6 rounded-full bg-amber-600 border border-white/40 shadow-sm"></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Correo / Teléfono</label>
+                                <input type="text" id="biz-contact" oninput="updatePreview()" placeholder="hola@tuestudio.com • 55 1234 5678" class="w-full px-3.5 py-2 text-sm text-white placeholder-slate-500 bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">RFC / Sitio Web / Portafolio</label>
+                                <input type="text" id="biz-tax-id" oninput="updatePreview()" placeholder="www.tuestudio.com" class="w-full px-3.5 py-2 text-sm text-white placeholder-slate-500 bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. Datos del Cliente y Proyecto -->
+                <section class="bg-slate-900/85 backdrop-blur-sm rounded-2xl border border-amber-500/25 shadow-xl shadow-black/40 overflow-hidden">
+                    <div class="px-5 py-4 bg-gradient-to-r from-blue-950/90 via-slate-900 to-slate-950 border-b border-amber-500/20 flex items-center gap-2.5">
+                        <i data-lucide="user-check" class="w-5 h-5 text-amber-400"></i>
+                        <h2 class="font-semibold text-white">2. Cliente y Detalles del Proyecto</h2>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Folio / N° Cotización</label>
+                                <input type="text" id="quote-number" oninput="updatePreview()" value="COT-2026-001" class="w-full px-3.5 py-2 text-sm font-mono text-amber-300 bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Fecha de Emisión</label>
+                                <input type="date" id="quote-date" oninput="updatePreview()" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none [color-scheme:dark]">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Validez (Días)</label>
+                                <input type="number" id="quote-validity" oninput="updatePreview()" value="15" min="1" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Nombre del Cliente / Empresa</label>
+                                <input type="text" id="client-name" oninput="updatePreview()" placeholder="Ej. Marca Innovadora S.A." class="w-full px-3.5 py-2 text-sm text-white placeholder-slate-500 bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Atención a / Contacto</label>
+                                <input type="text" id="client-contact" oninput="updatePreview()" placeholder="Ej. Lic. Sofía Hernández" class="w-full px-3.5 py-2 text-sm text-white placeholder-slate-500 bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Nombre del Proyecto</label>
+                            <input type="text" id="project-title" oninput="updatePreview()" placeholder="Ej. Identidad Visual, Web Interactiva y Señalética NFC" class="w-full px-3.5 py-2 text-sm font-medium text-white placeholder-slate-500 bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. Conceptos / Partidas del Proyecto -->
+                <section class="bg-slate-900/85 backdrop-blur-sm rounded-2xl border border-amber-500/25 shadow-xl shadow-black/40 overflow-hidden">
+                    <div class="px-5 py-4 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950/80 border-b border-amber-500/20 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <i data-lucide="list-plus" class="w-5 h-5 text-amber-400"></i>
+                            <h2 class="font-semibold text-white">3. Conceptos y Calculadoras</h2>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select id="currency-select" onchange="updatePreview()" class="text-xs font-medium text-amber-300 bg-slate-950 border border-amber-500/35 rounded-lg px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-amber-400">
+                                <option value="$">MXN / USD ($)</option>
+                                <option value="€">EUR (€)</option>
+                                <option value="S/">PEN (S/)</option>
+                                <option value="CLP$">CLP ($)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <!-- Selector Rápido por Categorías Especializadas -->
+                        <div class="bg-gradient-to-br from-slate-950/90 to-blue-950/60 p-3.5 rounded-xl border border-amber-500/20 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+                                    Agregar por Especialidad
+                                </span>
+                                <span class="text-[11px] text-slate-400">Haz clic para configurar</span>
+                            </div>
+
+                            <!-- Botones de Categoría en tonos azul marino, negro y dorado -->
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <button type="button" onclick="openSpecialtyModal('dev')" class="p-2.5 bg-slate-900/95 hover:bg-blue-950/80 border border-slate-700/90 hover:border-amber-400/60 rounded-xl text-left transition-all group shadow-sm">
+                                    <div class="flex items-center gap-2 text-amber-400 mb-1">
+                                        <i data-lucide="code-2" class="w-4 h-4"></i>
+                                        <span class="text-xs font-bold text-slate-100 group-hover:text-amber-300">Desarrollo & UI</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 leading-tight">Web, Interfaces e Interactivo</p>
+                                </button>
+
+                                <button type="button" onclick="openSpecialtyModal('branding')" class="p-2.5 bg-slate-900/95 hover:bg-blue-950/80 border border-slate-700/90 hover:border-amber-400/60 rounded-xl text-left transition-all group shadow-sm">
+                                    <div class="flex items-center gap-2 text-amber-400 mb-1">
+                                        <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                                        <span class="text-xs font-bold text-slate-100 group-hover:text-amber-300">Diseño & Marca</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 leading-tight">Logos, Ilustración e Identidad</p>
+                                </button>
+
+                                <button type="button" onclick="openSpecialtyModal('animation')" class="p-2.5 bg-slate-900/95 hover:bg-blue-950/80 border border-slate-700/90 hover:border-amber-400/60 rounded-xl text-left transition-all group shadow-sm">
+                                    <div class="flex items-center gap-2 text-amber-400 mb-1">
+                                        <i data-lucide="clapperboard" class="w-4 h-4"></i>
+                                        <span class="text-xs font-bold text-slate-100 group-hover:text-amber-300">Animaciones</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 leading-tight">Duración, elementos y formato</p>
+                                </button>
+
+                                <button type="button" onclick="openSpecialtyModal('video')" class="p-2.5 bg-slate-900/95 hover:bg-blue-950/80 border border-slate-700/90 hover:border-amber-400/60 rounded-xl text-left transition-all group shadow-sm">
+                                    <div class="flex items-center gap-2 text-amber-400 mb-1">
+                                        <i data-lucide="video" class="w-4 h-4"></i>
+                                        <span class="text-xs font-bold text-slate-100 group-hover:text-amber-300">Edición de Video</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 leading-tight">Por minuto, red social y nivel</p>
+                                </button>
+
+                                <button type="button" onclick="openSpecialtyModal('nfc')" class="p-2.5 bg-slate-900/95 hover:bg-blue-950/80 border border-slate-700/90 hover:border-amber-400/60 rounded-xl text-left transition-all group shadow-sm">
+                                    <div class="flex items-center gap-2 text-amber-400 mb-1">
+                                        <i data-lucide="nfc" class="w-4 h-4"></i>
+                                        <span class="text-xs font-bold text-slate-100 group-hover:text-amber-300">Productos NFC</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 leading-tight">Tarjetas, Tags y Menús</p>
+                                </button>
+
+                                <button type="button" onclick="openSpecialtyModal('laser')" class="p-2.5 bg-slate-900/95 hover:bg-blue-950/80 border border-slate-700/90 hover:border-amber-400/60 rounded-xl text-left transition-all group shadow-sm">
+                                    <div class="flex items-center gap-2 text-amber-400 mb-1">
+                                        <i data-lucide="flame" class="w-4 h-4"></i>
+                                        <span class="text-xs font-bold text-slate-100 group-hover:text-amber-300">Corte Láser MDF</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 leading-tight">Láminas 40x40 y Pintura</p>
+                                </button>
+
+                                <button type="button" onclick="openSpecialtyModal('digital')" class="p-2.5 bg-slate-900/95 hover:bg-blue-950/80 border border-slate-700/90 hover:border-amber-400/60 rounded-xl text-left transition-all group shadow-sm sm:col-span-3">
+                                    <div class="flex items-center gap-2 text-amber-400 mb-1">
+                                        <i data-lucide="image" class="w-4 h-4"></i>
+                                        <span class="text-xs font-bold text-slate-100 group-hover:text-amber-300">Productos Digitales & Redes Sociales</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 leading-tight">Edición de fotografía, ilustración digital, portada de Facebook, posts y paquetes de contenido</p>
+                                </button>
+
+                                <button type="button" onclick="openSpecialtyModal('ai_vision')" class="p-3 bg-gradient-to-r from-blue-950 via-slate-900 to-amber-950/50 hover:from-blue-900 hover:to-amber-900/50 border border-amber-400/60 rounded-xl text-left transition-all group shadow-md sm:col-span-3">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <div class="flex items-center gap-2 text-amber-400">
+                                            <i data-lucide="scan-search" class="w-4 h-4"></i>
+                                            <span class="text-xs font-extrabold text-amber-300">Cotizador Inteligente con Imagen (IA)</span>
+                                        </div>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-slate-950">IA Vision</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-300 leading-tight">Sube una foto o boceto + características; analiza tamaño, material y arroja un precio competitivo y rentable</p>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Lista Dinámica de Items -->
+                        <div id="items-container" class="space-y-3">
+                            <!-- Se llena dinámicamente con JS -->
+                        </div>
+
+                        <button type="button" onclick="addItem()" class="w-full py-2.5 px-4 border-2 border-dashed border-amber-500/40 hover:border-amber-400 bg-slate-950/60 hover:bg-blue-950/40 text-amber-300 font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i>
+                            <span>Agregar Concepto Manual Libre</span>
+                        </button>
+
+                        <!-- Configuración de Impuestos y Descuentos -->
+                        <div class="pt-4 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Impuesto / IVA (%)</label>
+                                <div class="relative">
+                                    <input type="number" id="tax-rate" value="16" min="0" max="100" step="0.5" oninput="updatePreview()" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                                    <span class="absolute right-3.5 top-2 text-sm text-amber-400/80">%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Descuento Global (%)</label>
+                                <div class="relative">
+                                    <input type="number" id="discount-rate" value="0" min="0" max="100" step="0.5" oninput="updatePreview()" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                                    <span class="absolute right-3.5 top-2 text-sm text-amber-400/80">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. Condiciones del Proyecto -->
+                <section class="bg-slate-900/85 backdrop-blur-sm rounded-2xl border border-amber-500/25 shadow-xl shadow-black/40 overflow-hidden">
+                    <div class="px-5 py-4 bg-gradient-to-r from-blue-950/90 via-slate-900 to-slate-950 border-b border-amber-500/20 flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-amber-400"></i>
+                            <h2 class="font-semibold text-white">4. Condiciones del Proyecto</h2>
+                        </div>
+                        <!-- Plantillas rápidas de condiciones -->
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] text-slate-400">Plantillas:</span>
+                            <button type="button" onclick="applyConditionPreset('standard')" class="text-xs px-2.5 py-1 bg-slate-950 border border-amber-500/35 hover:bg-amber-500/15 rounded-lg text-amber-300 transition-colors">50/50 Estándar</button>
+                            <button type="button" onclick="applyConditionPreset('milestones')" class="text-xs px-2.5 py-1 bg-slate-950 border border-amber-500/35 hover:bg-amber-500/15 rounded-lg text-amber-300 transition-colors">Por Hitos</button>
+                            <button type="button" onclick="applyConditionPreset('retainer')" class="text-xs px-2.5 py-1 bg-slate-950 border border-amber-500/35 hover:bg-amber-500/15 rounded-lg text-amber-300 transition-colors">Mensual</button>
+                        </div>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Tiempo Estimado de Entrega</label>
+                                <input type="text" id="delivery-time" oninput="updatePreview()" value="2 a 3 semanas hábiles" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Forma de Pago</label>
+                                <input type="text" id="payment-terms" oninput="updatePreview()" value="50% anticipo, 50% contra entrega" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Términos, Alcance y Condiciones Específicas</label>
+                            <textarea id="project-conditions" rows="5" oninput="updatePreview()" class="w-full px-3.5 py-2.5 text-sm text-slate-200 bg-slate-950/80 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none leading-relaxed">• Esta cotización tiene una vigencia de 15 días naturales a partir de su emisión.
+• El tiempo de entrega comienza a correr una vez recibido el anticipo y los materiales/archivos base.
+• Incluye hasta 2 rondas de revisiones o ajustes menores sin costo adicional.
+• En proyectos de corte láser y productos físicos NFC, la producción inicia tras la aprobación del prototipo digital.
+• Cualquier requerimiento adicional fuera del alcance descrito se cotizará por separado.</textarea>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- COLUMNA DERECHA: VISTA PREVIA EN TIEMPO REAL DEL DOCUMENTO -->
+            <div id="preview-panel" class="hidden lg:block lg:col-span-6 lg:sticky lg:top-24 print-only-container">
+                <div class="flex items-center justify-between mb-3 no-print">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        Vista Previa del Documento
+                    </span>
+                    <button onclick="window.print()" class="text-xs font-medium text-amber-300 hover:text-amber-200 flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-amber-500/35 shadow-sm">
+                        <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i>
+                        Imprimir
+                    </button>
+                </div>
+
+                <!-- HOJA DE COTIZACIÓN (Fondo blanco nítido para impresión profesional con detalles en azul marino y dorado) -->
+                <div id="quote-document" class="bg-white rounded-2xl shadow-2xl shadow-black/60 border-2 border-amber-500/30 p-6 sm:p-10 text-slate-800 transition-all">
+                    
+                    <!-- Encabezado con Logo y Datos del Negocio -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start gap-6 pb-6 border-b-2" id="doc-header-border" style="border-color: #b48a28;">
+                        <div class="flex items-start gap-4">
+                            <img id="doc-logo" src="" alt="Logo Empresa" class="hidden max-h-16 max-w-[140px] object-contain rounded-lg">
+                            <div>
+                                <h2 id="doc-biz-name" class="text-xl font-bold text-slate-950 tracking-tight">Tu Empresa S.A.</h2>
+                                <p id="doc-biz-contact" class="text-xs text-slate-500 mt-1">hola@tuestudio.com • 55 1234 5678</p>
+                                <p id="doc-biz-tax" class="text-xs text-slate-500">www.tuestudio.com</p>
+                            </div>
+                        </div>
+
+                        <div class="sm:text-right w-full sm:w-auto bg-slate-50 sm:bg-transparent p-3 sm:p-0 rounded-xl">
+                            <span id="doc-badge" class="inline-block px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider text-white mb-1" style="background-color: #b48a28;">
+                                Cotización
+                            </span>
+                            <p id="doc-number" class="text-sm font-mono font-bold text-slate-900">COT-2026-001</p>
+                            <p class="text-xs text-slate-500 mt-0.5">Fecha: <span id="doc-date" class="font-medium text-slate-700">--/--/----</span></p>
+                            <p class="text-xs text-slate-500">Válida por: <span id="doc-validity" class="font-medium text-slate-700">15 días</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Información del Cliente y Proyecto -->
+                    <div class="py-6 grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-slate-200">
+                        <div>
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Preparado para</p>
+                            <p id="doc-client-name" class="text-sm font-bold text-slate-900">Nombre del Cliente</p>
+                            <p id="doc-client-contact" class="text-xs text-slate-600 mt-0.5">Atención a: Contacto</p>
+                        </div>
+                        <div class="sm:text-right">
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Proyecto</p>
+                            <p id="doc-project-title" class="text-sm font-bold text-slate-900">Título del Proyecto</p>
+                            <p class="text-xs text-slate-600 mt-0.5">Entrega est.: <span id="doc-delivery" class="font-medium">2 a 3 semanas hábiles</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Conceptos -->
+                    <div class="py-6">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <th class="pb-2.5 pr-2">Descripción</th>
+                                    <th class="pb-2.5 px-2 text-center w-16">Cant.</th>
+                                    <th class="pb-2.5 px-2 text-right w-24">Precio U.</th>
+                                    <th class="pb-2.5 pl-2 text-right w-28">Importe</th>
+                                </tr>
+                            </thead>
+                            <tbody id="doc-items-body" class="divide-y divide-slate-100 text-sm">
+                                <!-- Filas generadas dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Resumen Financiero -->
+                    <div class="flex justify-end pt-2 pb-6 border-b border-slate-200">
+                        <div class="w-full sm:w-64 space-y-2 text-sm">
+                            <div class="flex justify-between text-slate-600">
+                                <span>Subtotal:</span>
+                                <span id="doc-subtotal" class="font-medium">$0.00</span>
+                            </div>
+                            <div id="doc-discount-row" class="hidden flex justify-between text-amber-700">
+                                <span>Descuento (<span id="doc-discount-pct">0</span>%):</span>
+                                <span id="doc-discount-amount">-$0.00</span>
+                            </div>
+                            <div id="doc-tax-row" class="flex justify-between text-slate-600">
+                                <span>IVA (<span id="doc-tax-pct">16</span>%):</span>
+                                <span id="doc-tax-amount" class="font-medium">$0.00</span>
+                            </div>
+                            <div class="pt-2 border-t border-slate-300 flex justify-between items-center">
+                                <span class="font-bold text-slate-950">Total:</span>
+                                <span id="doc-total" class="text-lg font-extrabold" style="color: #b48a28;">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Condiciones Comerciales del Proyecto -->
+                    <div class="pt-6 space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950 text-white px-3.5 py-2 rounded-xl border border-amber-500/40">
+                            <span class="text-xs font-semibold text-amber-400">Forma de Pago:</span>
+                            <span id="doc-payment-terms" class="text-xs font-medium text-slate-100">50% anticipo, 50% contra entrega</span>
+                        </div>
+
+                        <div>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Condiciones y Términos del Proyecto</h4>
+                            <div id="doc-conditions" class="text-xs text-slate-600 whitespace-pre-line leading-relaxed">
+                                <!-- Condiciones renderizadas -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pie de Firma -->
+                    <div class="mt-10 pt-6 border-t border-slate-200 grid grid-cols-2 gap-8 text-center">
+                        <div>
+                            <div class="border-b border-slate-400 h-8 mb-1.5 mx-4"></div>
+                            <p class="text-[11px] font-medium text-slate-500">Autorizado por <span id="doc-sign-biz">Tu Empresa</span></p>
+                        </div>
+                        <div>
+                            <div class="border-b border-slate-400 h-8 mb-1.5 mx-4"></div>
+                            <p class="text-[11px] font-medium text-slate-500">Aceptación del Cliente</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- MODAL DE ESPECIALIDADES -->
+    <div id="specialty-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4 no-print">
+        <div class="bg-slate-900 rounded-2xl max-w-lg w-full shadow-2xl shadow-black border border-amber-500/35 overflow-hidden animate-fadeIn text-slate-200">
+            
+            <!-- Header Modal -->
+            <div class="px-5 py-4 bg-gradient-to-r from-slate-950 via-blue-950/90 to-slate-950 border-b border-amber-500/25 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div id="modal-icon-box" class="p-2 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-400">
+                        <i id="modal-icon" data-lucide="sparkles" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 id="modal-title" class="font-bold text-white text-base">Configurar Servicio</h3>
+                        <p id="modal-subtitle" class="text-xs text-slate-400">Selecciona o calcula los parámetros</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeSpecialtyModal()" class="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- CONTENIDO 1: DESARROLLO & UI/UX -->
+            <div id="modal-content-dev" class="p-5 space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tipo de Proyecto Digital</label>
+                    <select id="dev-type" onchange="updateDevPreset()" class="w-full px-3.5 py-2.5 text-sm text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                        <option value="web_landing">Desarrollo Web - Landing Page / Sitio Informativo</option>
+                        <option value="web_app">Desarrollo Web Full-Stack / Sistema a Medida</option>
+                        <option value="ui_design">Diseño de Interfaces (UI/UX) en Figma</option>
+                        <option value="interactive">Diseño Interactivo (WebGL, Micro-interacciones, Experiencia)</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Cantidad / Vistas</label>
+                        <input type="number" id="dev-qty" value="1" min="1" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Precio Unitario ($)</label>
+                        <input type="number" id="dev-price" value="8500" min="0" step="100" class="w-full px-3.5 py-2 text-sm font-semibold text-amber-300 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Alcance / Entregables incluidos</label>
+                    <textarea id="dev-desc" rows="3" class="w-full px-3.5 py-2 text-xs text-slate-200 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none leading-relaxed"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeSpecialtyModal()" class="px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-xl">Cancelar</button>
+                    <button type="button" onclick="insertDevItem()" class="px-4 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 rounded-xl shadow-md">Agregar a Cotización</button>
+                </div>
+            </div>
+
+            <!-- CONTENIDO 2: PRODUCTOS CON NFC -->
+            <div id="modal-content-nfc" class="p-5 space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tipo de Producto NFC</label>
+                    <select id="nfc-type" onchange="updateNfcPreset()" class="w-full px-3.5 py-2.5 text-sm text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                        <option value="cards">Tarjetas de Presentación Inteligentes NFC (PVC / Bambú)</option>
+                        <option value="stands">Expositores / Señalética NFC de Mesa (Reseñas / Menú)</option>
+                        <option value="tags">Stickers / Tags NFC Programados (NTAG215)</option>
+                        <option value="custom_nfc">Producto Personalizado con Chip NFC Integrado</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Cantidad de Piezas</label>
+                        <input type="number" id="nfc-qty" value="10" min="1" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Precio Unitario ($)</label>
+                        <input type="number" id="nfc-price" value="250" min="0" step="10" class="w-full px-3.5 py-2 text-sm font-semibold text-amber-300 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Especificaciones del Producto y Programación</label>
+                    <textarea id="nfc-desc" rows="3" class="w-full px-3.5 py-2 text-xs text-slate-200 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none leading-relaxed"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeSpecialtyModal()" class="px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-xl">Cancelar</button>
+                    <button type="button" onclick="insertNfcItem()" class="px-4 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 rounded-xl shadow-md">Agregar Producto NFC</button>
+                </div>
+            </div>
+
+            <!-- CONTENIDO 3: CALCULADORA DE CORTE / GRABADO LÁSER MDF 40x40 CM -->
+            <div id="modal-content-laser" class="p-5 space-y-4 hidden max-h-[82vh] overflow-y-auto">
+                <div class="bg-blue-950/70 border border-amber-500/30 rounded-xl p-3 flex items-start gap-2.5">
+                    <i data-lucide="info" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+                    <p class="text-xs text-slate-200 leading-relaxed">
+                        Cálculo basado en láminas estándar de <strong class="text-amber-300">MDF de 40 × 40 cm</strong> (área útil 39×39 cm por margen de corte) y acabado de pintura a razón de <strong class="text-amber-300">$100 por cada 30 min</strong>.
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Nombre de la Pieza / Proyecto Láser</label>
+                    <input type="text" id="laser-name" value="Piezas personalizadas en MDF" oninput="calculateLaserQuote()" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                </div>
+
+                <!-- Dimensiones y Cantidad -->
+                <div class="grid grid-cols-3 gap-2.5">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Ancho (cm)</label>
+                        <input type="number" id="laser-width" value="15" min="1" max="40" step="0.5" oninput="calculateLaserQuote()" class="w-full px-3 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Alto (cm)</label>
+                        <input type="number" id="laser-height" value="15" min="1" max="40" step="0.5" oninput="calculateLaserQuote()" class="w-full px-3 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Cant. Piezas</label>
+                        <input type="number" id="laser-qty" value="10" min="1" oninput="calculateLaserQuote()" class="w-full px-3 py-2 text-sm font-semibold text-amber-300 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                </div>
+
+                <!-- Tipo de Proceso Láser y Costos Base -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Proceso en Láser</label>
+                        <select id="laser-process" onchange="calculateLaserQuote()" class="w-full px-3 py-2 text-xs text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                            <option value="cut">Solo Corte Perimetral</option>
+                            <option value="cut_engrave" selected>Corte + Grabado Superficial</option>
+                            <option value="deep_engrave">Corte + Grabado Detallado / Relleno</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Costo por Lámina MDF 40×40 ($)</label>
+                        <input type="number" id="laser-sheet-cost" value="65" min="0" step="5" oninput="calculateLaserQuote()" class="w-full px-3 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Tarifa Minuto Máquina Láser ($)</label>
+                        <input type="number" id="laser-min-rate" value="6" min="1" step="0.5" oninput="calculateLaserQuote()" class="w-full px-3 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">¿Lleva Acabado de Pintura?</label>
+                        <select id="laser-has-paint" onchange="togglePaintInput(); calculateLaserQuote();" class="w-full px-3 py-2 text-xs font-medium text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                            <option value="no">No (MDF Natural)</option>
+                            <option value="yes">Sí, con acabado de pintura</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Control de Medias Horas de Pintura ($100 c/u) -->
+                <div id="laser-paint-box" class="hidden bg-amber-950/35 border border-amber-500/40 rounded-xl p-3 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-amber-300">Tiempo de Pintura (Medias Horas)</label>
+                        <span class="text-xs font-bold text-amber-400">$100.00 / cada 30 min</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="number" id="laser-paint-halfhours" value="2" min="1" step="1" oninput="calculateLaserQuote()" class="w-24 px-3 py-1.5 text-sm font-bold text-amber-300 bg-slate-950 border border-amber-500/50 rounded-lg focus:ring-2 focus:ring-amber-400 outline-none">
+                        <span id="laser-paint-summary" class="text-xs text-slate-200 font-medium">1.0 hr total = +$200.00</span>
+                    </div>
+                </div>
+
+                <!-- Resumen Estimado en Tiempo Real -->
+                <div class="bg-gradient-to-br from-slate-950 via-blue-950/80 to-slate-950 border border-amber-500/40 text-slate-200 rounded-xl p-4 space-y-2">
+                    <div class="flex items-center justify-between text-xs text-slate-300 border-b border-slate-800 pb-2">
+                        <span>Aprovechamiento por lámina (40x40 cm):</span>
+                        <span id="calc-pieces-per-sheet" class="font-bold text-amber-300">4 piezas / hoja</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center py-1">
+                        <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                            <p class="text-[10px] text-slate-400 uppercase">Láminas MDF</p>
+                            <p id="calc-sheets-needed" class="text-sm font-bold text-white">3 hojas</p>
+                        </div>
+                        <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                            <p class="text-[10px] text-slate-400 uppercase">Prod. Láser</p>
+                            <p id="calc-laser-time" class="text-sm font-bold text-blue-300">24 min</p>
+                        </div>
+                        <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                            <p class="text-[10px] text-slate-400 uppercase">Pintura</p>
+                            <p id="calc-paint-cost" class="text-sm font-bold text-amber-300">$0.00</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                        <div>
+                            <p class="text-xs font-medium text-slate-200">Costo Total Estimado del Lote</p>
+                            <p id="calc-unit-price" class="text-[11px] text-slate-400">($0.00 por pieza)</p>
+                        </div>
+                        <span id="calc-total-price" class="text-xl font-extrabold text-amber-400">$0.00</span>
+                    </div>
+                </div>
+
+                <div class="pt-1 flex justify-end gap-2">
+                    <button type="button" onclick="closeSpecialtyModal()" class="px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-xl">Cancelar</button>
+                    <button type="button" onclick="insertLaserItem()" class="px-4 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 rounded-xl shadow-md">Agregar Proyecto Láser</button>
+                </div>
+            </div>
+
+            <!-- CONTENIDO 4: DISEÑO DE MARCA (Logos, Ilustración, Identidad Gráfica) -->
+            <div id="modal-content-branding" class="p-5 space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Servicio de Diseño Gráfico y Marca</label>
+                    <select id="branding-type" onchange="updateBrandingPreset()" class="w-full px-3.5 py-2.5 text-sm text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                        <option value="logo">Diseño de Logotipo Profesional</option>
+                        <option value="identity">Identidad Gráfica Corporativa Completa</option>
+                        <option value="illustration">Ilustración Personalizada / Vectorial</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Cantidad / Piezas</label>
+                        <input type="number" id="branding-qty" value="1" min="1" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Precio Unitario ($)</label>
+                        <input type="number" id="branding-price" value="4500" min="0" step="100" class="w-full px-3.5 py-2 text-sm font-semibold text-amber-300 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Entregables y Formatos Incluidos</label>
+                    <textarea id="branding-desc" rows="3" class="w-full px-3.5 py-2 text-xs text-slate-200 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none leading-relaxed"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeSpecialtyModal()" class="px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-xl">Cancelar</button>
+                    <button type="button" onclick="insertBrandingItem()" class="px-4 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 rounded-xl shadow-md">Agregar a Cotización</button>
+                </div>
+            </div>
+
+            <!-- CONTENIDO 5: CALCULADORA DE ANIMACIONES (Duración, Elementos, Formato) -->
+            <div id="modal-content-animation" class="p-5 space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Nombre / Concepto de la Animación</label>
+                    <input type="text" id="anim-name" value="Animación Motion Graphics" oninput="calculateAnimationQuote()" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Duración (Segundos)</label>
+                        <input type="number" id="anim-duration" value="15" min="1" step="1" oninput="calculateAnimationQuote()" class="w-full px-3.5 py-2 text-sm font-semibold text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Tarifa Base / Segundo ($)</label>
+                        <input type="number" id="anim-sec-rate" value="120" min="10" step="10" oninput="calculateAnimationQuote()" class="w-full px-3.5 py-2 text-sm text-amber-300 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Elementos / Complejidad</label>
+                        <select id="anim-elements" onchange="calculateAnimationQuote()" class="w-full px-3 py-2 text-xs text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                            <option value="1.0">Básica (Logo, textos y formas 2D)</option>
+                            <option value="1.4" selected>Media (Ilustraciones y transiciones)</option>
+                            <option value="2.0">Compleja (Personajes, rigging o 3D)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Formato de Entrega</label>
+                        <select id="anim-format" onchange="calculateAnimationQuote()" class="w-full px-3 py-2 text-xs text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                            <option value="MP4 / MOV (16:9 Horizontal)" data-mult="1.0">MP4 / MOV (16:9 Horizontal)</option>
+                            <option value="Vertical 9:16 (Reels / Stories)" data-mult="1.0">Vertical 9:16 (Reels / Stories)</option>
+                            <option value="Lottie JSON (Interactivo Web/App)" data-mult="1.25">Lottie JSON (Interactivo Web/App)</option>
+                            <option value="MOV Alpha (Fondo Transparente)" data-mult="1.15">MOV Alpha (Fondo Transparente)</option>
+                            <option value="Pack Multiformato (16:9 + 9:16 + 1:1)" data-mult="1.35">Pack Multiformato (16:9 + 9:16 + 1:1)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-slate-950 via-blue-950/80 to-slate-950 border border-amber-500/40 text-slate-200 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-200">Total Estimado de Animación</p>
+                        <p id="anim-calc-detail" class="text-[11px] text-slate-400">15s • Complejidad Media</p>
+                    </div>
+                    <span id="anim-total-price" class="text-xl font-extrabold text-amber-400">$0.00</span>
+                </div>
+
+                <div class="pt-1 flex justify-end gap-2">
+                    <button type="button" onclick="closeSpecialtyModal()" class="px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-xl">Cancelar</button>
+                    <button type="button" onclick="insertAnimationItem()" class="px-4 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 rounded-xl shadow-md">Agregar Animación</button>
+                </div>
+            </div>
+
+            <!-- CONTENIDO 6: CALCULADORA DE EDICIÓN DE VIDEO (Duración en min, Red Social, Nivel) -->
+            <div id="modal-content-video" class="p-5 space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Título del Proyecto de Video</label>
+                    <input type="text" id="video-name" value="Edición de Video para Redes Sociales" oninput="calculateVideoQuote()" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Nivel de Edición</label>
+                        <select id="video-level" onchange="onVideoLevelChange()" class="w-full px-3 py-2 text-xs font-medium text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                            <option value="simple" data-rate="350">Edición Sencilla (Cortes, limpieza y música)</option>
+                            <option value="medium" data-rate="650" selected>Edición Media (Subtítulos dinámicos, B-roll, SFX)</option>
+                            <option value="complete" data-rate="1100">Edición Completa (Motion graphics, color, ritmo pro)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Red Social / Formato</label>
+                        <select id="video-social" onchange="calculateVideoQuote()" class="w-full px-3 py-2 text-xs text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                            <option value="Instagram Reels / TikTok (9:16 Vertical)">Instagram Reels / TikTok (9:16 Vertical)</option>
+                            <option value="YouTube (16:9 Horizontal Full HD/4K)">YouTube (16:9 Horizontal Full HD/4K)</option>
+                            <option value="YouTube Shorts (9:16 Vertical)">YouTube Shorts (9:16 Vertical)</option>
+                            <option value="Facebook / LinkedIn Feed (1:1 o 4:5)">Facebook / LinkedIn Feed (1:1 o 4:5)</option>
+                            <option value="Adaptación Multi-Red (Horizontal + Vertical)">Adaptación Multi-Red (Horizontal + Vertical)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Duración Final (Minutos)</label>
+                        <input type="number" id="video-minutes" value="3" min="0.5" step="0.5" oninput="calculateVideoQuote()" class="w-full px-3.5 py-2 text-sm font-semibold text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Costo por Minuto ($)</label>
+                        <input type="number" id="video-rate-min" value="650" min="50" step="50" oninput="calculateVideoQuote()" class="w-full px-3.5 py-2 text-sm font-semibold text-amber-300 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-slate-950 via-blue-950/80 to-slate-950 border border-amber-500/40 text-slate-200 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-200">Total Edición de Video</p>
+                        <p id="video-calc-detail" class="text-[11px] text-slate-400">3 min × $650/min • Edición Media</p>
+                    </div>
+                    <span id="video-total-price" class="text-xl font-extrabold text-amber-400">$0.00</span>
+                </div>
+
+                <div class="pt-1 flex justify-end gap-2">
+                    <button type="button" onclick="closeSpecialtyModal()" class="px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-xl">Cancelar</button>
+                    <button type="button" onclick="insertVideoItem()" class="px-4 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 rounded-xl shadow-md">Agregar Edición de Video</button>
+                </div>
+            </div>
+
+            <!-- CONTENIDO 7: PRODUCTOS DIGITALES Y REDES SOCIALES -->
+            <div id="modal-content-digital" class="p-5 space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tipo de Producto Digital / Contenido</label>
+                    <select id="digital-type" onchange="updateDigitalPreset()" class="w-full px-3.5 py-2.5 text-sm text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                        <option value="photo_edit">Edición y Retoque Profesional de Fotografía</option>
+                        <option value="digital_illus">Ilustración Digital Personalizada</option>
+                        <option value="fb_cover">Diseño de Portada de Facebook / Banner Web</option>
+                        <option value="social_post">Diseño de Post / Carrusel para Redes Sociales</option>
+                        <option value="social_pack">Paquete de Contenido Mensual para Redes Sociales</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Cantidad de Piezas / Fotos</label>
+                        <input type="number" id="digital-qty" value="1" min="1" class="w-full px-3.5 py-2 text-sm text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Precio Unitario ($)</label>
+                        <input type="number" id="digital-price" value="350" min="0" step="50" class="w-full px-3.5 py-2 text-sm font-semibold text-amber-300 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Formato, Resolución y Entregables</label>
+                    <textarea id="digital-desc" rows="3" class="w-full px-3.5 py-2 text-xs text-slate-200 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none leading-relaxed"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeSpecialtyModal()" class="px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-xl">Cancelar</button>
+                    <button type="button" onclick="insertDigitalItem()" class="px-4 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 rounded-xl shadow-md">Agregar Producto Digital</button>
+                </div>
+            </div>
+
+            <!-- CONTENIDO 8: COTIZADOR INTELIGENTE POR IMAGEN Y CARACTERÍSTICAS (IA) -->
+            <div id="modal-content-ai_vision" class="p-5 space-y-4 hidden max-h-[82vh] overflow-y-auto">
+                <div class="bg-blue-950/70 border border-amber-500/30 rounded-xl p-3 flex items-start gap-2.5">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+                    <p class="text-xs text-slate-200 leading-relaxed">
+                        Sube una imagen de referencia (boceto, pieza física, diseño o captura) y describe sus medidas, material y acabados. Calcularemos un <strong class="text-amber-300">precio competitivo y rentable</strong>.
+                    </p>
+                </div>
+
+                <!-- Carga de Imagen de Referencia -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">1. Imagen de Referencia (Opcional o Foto del Producto)</label>
+                    <div class="relative">
+                        <label for="ai-image-upload" class="cursor-pointer flex flex-col items-center justify-center w-full min-h-[120px] rounded-xl border-2 border-dashed border-amber-500/40 hover:border-amber-400 bg-slate-950/80 hover:bg-slate-900 transition-all overflow-hidden p-3">
+                            <img id="ai-image-preview" src="" alt="Referencia" class="hidden max-h-40 object-contain rounded-lg shadow-sm">
+                            <div id="ai-image-placeholder" class="flex flex-col items-center text-center py-2">
+                                <i data-lucide="upload-cloud" class="w-7 h-7 text-amber-400 mb-1"></i>
+                                <span class="text-xs font-semibold text-slate-200">Haz clic para subir imagen o boceto</span>
+                                <span class="text-[11px] text-slate-400 mt-0.5">PNG, JPG o WEBP</span>
+                            </div>
+                        </label>
+                        <input id="ai-image-upload" type="file" accept="image/*" class="hidden" onchange="handleAiImageUpload(event)">
+                        <button type="button" id="btn-remove-ai-img" onclick="removeAiImage()" class="hidden absolute top-2 right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600" title="Quitar imagen">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Características, Tamaño y Material -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Tamaño / Dimensiones</label>
+                        <input type="text" id="ai-size" placeholder="Ej. 25x18 cm o Web 5 secciones" class="w-full px-3 py-2 text-xs text-white placeholder-slate-500 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Material / Tecnología</label>
+                        <input type="text" id="ai-material" placeholder="Ej. MDF 3mm + Pintura, NFC, React" class="w-full px-3 py-2 text-xs text-white placeholder-slate-500 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="col-span-1">
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Cantidad</label>
+                        <input type="number" id="ai-qty" value="1" min="1" class="w-full px-3 py-2 text-xs font-semibold text-white bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Estrategia de Precio</label>
+                        <select id="ai-strategy" class="w-full px-3 py-2 text-xs text-white border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none bg-slate-950">
+                            <option value="balanced" selected>Equilibrado (Competitivo + Buen Margen)</option>
+                            <option value="aggressive">Muy Competitivo (Ganar cliente / volumen)</option>
+                            <option value="premium">Valor Agregado / Acabado Premium</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">2. Características, Acabados y Detalles del Pedido</label>
+                    <textarea id="ai-features" rows="3" placeholder="Describe qué deseas cotizar: nivel de detalle, tiempos de pintura, programación NFC, animaciones o funcionalidades requeridas..." class="w-full px-3.5 py-2 text-xs text-slate-200 placeholder-slate-500 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-400/60 outline-none leading-relaxed"></textarea>
+                </div>
+
+                <!-- Configuración opcional de API Key para uso externo (GitHub Pages / Google Sites) -->
+                <details class="bg-slate-950/90 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300">
+                    <summary class="cursor-pointer font-semibold text-amber-400 flex items-center justify-between select-none">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="key-round" class="w-3.5 h-3.5 text-amber-400"></i>
+                            Configurar API Key (Solo si usas GitHub Pages / Google Sites)
+                        </span>
+                        <span class="text-[10px] text-slate-500">Opcional</span>
+                    </summary>
+                    <div class="pt-2.5 pb-1 space-y-1.5">
+                        <p class="text-[11px] text-slate-400 leading-snug">
+                            Aquí funciona automáticamente. Si publicas este archivo en <strong class="text-slate-200">GitHub Pages</strong>, pega tu clave gratuita de Google AI Studio para habilitar la IA:
+                        </p>
+                        <input type="password" id="ai-custom-apikey" oninput="saveCustomApiKey(this.value)" placeholder="AIzaSy..." class="w-full px-3 py-1.5 text-xs font-mono text-amber-300 border border-slate-700 rounded-lg focus:ring-2 focus:ring-amber-400 outline-none bg-slate-900">
+                    </div>
+                </details>
+
+                <button type="button" id="btn-analyze-ai" onclick="analyzeImageAndQuote()" class="w-full py-2.5 px-4 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 border border-amber-200/60 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-slate-950"></i>
+                    <span>Analizar Imagen y Calcular Precio Óptimo</span>
+                </button>
+
+                <!-- Indicador de Carga -->
+                <div id="ai-loading-box" class="hidden p-4 rounded-xl bg-slate-950 border border-amber-500/30 text-center space-y-2">
+                    <div class="inline-block w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-xs font-semibold text-amber-300">Analizando dimensiones, materiales y comparativa de mercado...</p>
+                </div>
+
+                <!-- Resultado Comparativo de la IA -->
+                <div id="ai-result-box" class="hidden bg-gradient-to-br from-slate-950 via-blue-950/70 to-slate-950 border border-amber-500/40 rounded-xl p-4 space-y-3 animate-fadeIn">
+                    <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Propuesta Sugerida</span>
+                            <h4 id="ai-res-title" class="text-sm font-bold text-white">Concepto Analizado</h4>
+                        </div>
+                        <span id="ai-res-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950">Margen Óptimo</span>
+                    </div>
+
+                    <!-- Comparativa de 3 niveles -->
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                            <p class="text-[10px] text-slate-400">Costo Base Unit.</p>
+                            <p id="ai-res-base" class="text-xs font-bold text-slate-200">$0.00</p>
+                        </div>
+                        <div class="bg-amber-500/15 p-2 rounded-lg border-2 border-amber-400 shadow-sm">
+                            <p class="text-[10px] font-bold text-amber-300">Sugerido Unit.</p>
+                            <p id="ai-res-suggested" class="text-sm font-extrabold text-amber-400">$0.00</p>
+                        </div>
+                        <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                            <p class="text-[10px] text-slate-400">Mercado Unit.</p>
+                            <p id="ai-res-market" class="text-xs font-bold text-blue-300">$0.00</p>
+                        </div>
+                    </div>
+
+                    <!-- Resumen Total del Lote y Margen Estimado -->
+                    <div class="bg-slate-900/95 px-3 py-2 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+                        <div>
+                            <span class="text-slate-400">Total estimado del lote (<span id="ai-res-qty-label">1</span> pzas):</span>
+                            <p id="ai-res-savings" class="text-[11px] font-medium text-amber-300"></p>
+                        </div>
+                        <span id="ai-res-batch-total" class="text-base font-extrabold text-amber-400">$0.00</span>
+                    </div>
+
+                    <div class="bg-slate-900/95 p-3 rounded-lg border border-slate-800 space-y-1.5">
+                        <p class="text-[11px] font-bold text-amber-300">Análisis Comparativo y Justificación:</p>
+                        <p id="ai-res-analysis" class="text-xs text-slate-300 leading-relaxed"></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-300 mb-1">Ajustar Precio Unitario Final si lo deseas ($)</label>
+                        <input type="number" id="ai-res-final-price" step="10" oninput="updateAiBatchPreview()" class="w-full px-3 py-1.5 text-sm font-bold text-amber-300 bg-slate-950 border border-amber-500/50 rounded-lg focus:ring-2 focus:ring-amber-400 outline-none">
+                    </div>
+
+                    <div class="pt-1 flex justify-end gap-2">
+                        <button type="button" onclick="closeSpecialtyModal()" class="px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-xl">Cerrar</button>
+                        <button type="button" onclick="insertAiItem()" class="px-4 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 rounded-xl shadow-md">Agregar a Cotización</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Contenedor de Notificaciones Toast -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 no-print"></div>
+
+    <!-- Lógica JavaScript -->
+    <script>
+        // Estado inicial de partidas
+        let quoteItems = [
+            {
+                id: 1,
+                name: "Desarrollo Web & Diseño de Interfaz (UI/UX)",
+                description: "Diseño responsivo en tonos personalizados, arquitectura de información y despliegue productivo.",
+                qty: 1,
+                price: 9500
+            },
+            {
+                id: 2,
+                name: "Señalética NFC de Mesa (10 piezas)",
+                description: "Expositores con chip NFC NTAG215 programado hacia catálogo digital y reseñas.",
+                qty: 10,
+                price: 250
+            }
+        ];
+
+        let businessLogoDataUrl = "";
+        let laserCurrentCalc = {
+            total: 0,
+            unitPrice: 0,
+            sheets: 0,
+            piecesPerSheet: 0,
+            laserMinutes: 0,
+            paintHalfHours: 0,
+            paintCost: 0
+        };
+        let animCurrentTotal = 0;
+        let videoCurrentTotal = 0;
+        let aiReferenceBase64 = "";
+        let aiReferenceMimeType = "image/png";
+        let aiLastSuggestion = null;
+
+        // Plantillas predefinidas de Desarrollo & UI
+        const devPresets = {
+            web_landing: {
+                name: "Desarrollo Web - Landing Page / Sitio Corporativo",
+                price: 8500,
+                desc: "Diseño responsivo (móvil/escritorio), optimización SEO básica, formulario de contacto, integración con WhatsApp y despliegue."
+            },
+            web_app: {
+                name: "Desarrollo Web Full-Stack / Aplicación a Medida",
+                price: 22000,
+                desc: "Arquitectura Frontend y Backend, base de datos, panel administrativo, autenticación de usuarios y API REST."
+            },
+            ui_design: {
+                name: "Diseño de Interfaces (UI/UX) y Prototipado",
+                price: 6500,
+                desc: "Wireframes, sistema de diseño (guía de estilos, componentes), diseño visual en alta fidelidad y prototipo interactivo en Figma."
+            },
+            interactive: {
+                name: "Diseño Interactivo & Experiencia Web",
+                price: 12500,
+                desc: "Micro-interacciones avanzadas, animaciones vinculadas al scroll, elementos 3D/WebGL o canvas interactivo."
+            }
+        };
+
+        // Plantillas predefinidas de Marca & Diseño Gráfico
+        const brandingPresets = {
+            logo: {
+                name: "Diseño de Logotipo Profesional",
+                price: 4500,
+                desc: "3 propuestas conceptuales, hasta 2 rondas de ajuste, entrega en vectores editables (AI, EPS, SVG) y PNG transparente."
+            },
+            identity: {
+                name: "Identidad Gráfica Corporativa Completa",
+                price: 11500,
+                desc: "Logotipo y variantes, paleta cromática, sistema tipográfico, elementos gráficos auxiliares, papelería y Manual de Marca PDF."
+            },
+            illustration: {
+                name: "Ilustración Personalizada / Vectorial",
+                price: 2800,
+                desc: "Ilustración original a medida en estilo editorial, personaje o isométrico. Entrega en alta resolución (300 DPI) y vector."
+            }
+        };
+
+        // Plantillas predefinidas de Productos NFC
+        const nfcPresets = {
+            cards: {
+                name: "Tarjetas de Presentación Inteligentes NFC",
+                price: 250,
+                desc: "Tarjeta PVC/Mate con chip NFC integrado, impresión personalizada y programación de perfil digital vCard / enlace."
+            },
+            stands: {
+                name: "Expositores / Señalética NFC de Mesa",
+                price: 380,
+                desc: "Base acrílica o madera grabada con chip NFC integrado para menú digital, Wi-Fi o reseñas de Google."
+            },
+            tags: {
+                name: "Stickers / Tags NFC Programados (NTAG215)",
+                price: 85,
+                desc: "Etiqueta adhesiva NFC de alta respuesta programada y bloqueada contra escritura accidental."
+            },
+            custom_nfc: {
+                name: "Producto Personalizado con Chip NFC Integrado",
+                price: 450,
+                desc: "Fabricación especial con encapsulado NFC interno, pruebas de lectura y vinculación a experiencia web."
+            }
+        };
+
+        // Plantillas predefinidas de Productos Digitales y Redes Sociales
+        const digitalPresets = {
+            photo_edit: {
+                name: "Edición y Retoque Profesional de Fotografía",
+                price: 350,
+                desc: "Corrección de color, iluminación, limpieza de imperfecciones, recorte y exportación en alta resolución (JPG/PNG/TIFF).",
+                defaultQty: 5
+            },
+            digital_illus: {
+                name: "Ilustración Digital Personalizada",
+                price: 2400,
+                desc: "Arte digital original a medida en estilo editorial, personaje o conceptual. Entrega en alta resolución (300 DPI) y archivo fuente.",
+                defaultQty: 1
+            },
+            fb_cover: {
+                name: "Diseño de Portada de Facebook / Banner",
+                price: 650,
+                desc: "Diseño adaptado a zonas seguras de visualización en escritorio y móvil, alineado a la identidad visual de la marca.",
+                defaultQty: 1
+            },
+            social_post: {
+                name: "Diseño de Post para Redes Sociales",
+                price: 450,
+                desc: "Arte gráfico optimizado para Feed (1080×1350 px) e Historia (1080×1920 px), listo para publicar.",
+                defaultQty: 4
+            },
+            social_pack: {
+                name: "Paquete de Contenido para Redes Sociales",
+                price: 3800,
+                desc: "Kit integral de contenido visual (12 posts gráficos, 8 historias adaptadas y 1 portada) con línea gráfica coherente.",
+                defaultQty: 1
+            }
+        };
+
+        // Plantillas de condiciones
+        const conditionPresets = {
+            standard: {
+                delivery: "2 a 3 semanas hábiles",
+                payment: "50% anticipo, 50% contra entrega",
+                text: "• Esta cotización tiene una vigencia de 15 días naturales a partir de su emisión.\n• El tiempo de entrega comienza a correr una vez recibido el anticipo y la información inicial por parte del cliente.\n• Incluye hasta 2 rondas de revisiones o ajustes menores sin costo adicional.\n• Cualquier requerimiento adicional fuera del alcance descrito se cotizará por separado."
+            },
+            milestones: {
+                delivery: "4 a 6 semanas hábiles (por etapas)",
+                payment: "40% inicio, 30% avance aprobado, 30% entrega final",
+                text: "• Proyecto dividido en 3 entregables principales con validación en cada etapa.\n• Los pagos parciales deberán cubrirse dentro de los 3 días hábiles posteriores a la aprobación de cada hito.\n• Incluye garantía de soporte técnico de 30 días posteriores a la entrega final."
+            },
+            retainer: {
+                delivery: "Servicio continuo mensual",
+                payment: "100% por adelantado los primeros 5 días del mes",
+                text: "• Contratación de bolsa de horas o producción mensual recurrente.\n• Las horas o piezas no utilizadas dentro del mes corriente no son acumulables salvo acuerdo previo.\n• Cancelación o pausa del servicio requiere notificación con 15 días de anticipación."
+            }
+        };
+
+        // Inicialización al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('quote-date').value = today;
+
+            loadCustomApiKey();
+            loadBusinessProfile();
+            renderItemsEditor();
+            updatePreview();
+            lucide.createIcons();
+        });
+
+        // --- MANEJO DE MODALES POR ESPECIALIDAD ---
+        function openSpecialtyModal(category) {
+            const modal = document.getElementById('specialty-modal');
+            const title = document.getElementById('modal-title');
+            const subtitle = document.getElementById('modal-subtitle');
+            const iconBox = document.getElementById('modal-icon-box');
+            const icon = document.getElementById('modal-icon');
+
+            ['dev', 'nfc', 'laser', 'branding', 'animation', 'video', 'digital', 'ai_vision'].forEach(c => {
+                document.getElementById(`modal-content-${c}`).classList.add('hidden');
+            });
+
+            if (category === 'dev') {
+                title.textContent = "Apartado de Desarrollo & Diseño";
+                subtitle.textContent = "Web, Diseño de Interfaces y Diseños Interactivos";
+                iconBox.className = "p-2 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-400";
+                icon.setAttribute('data-lucide', 'code-2');
+                document.getElementById('modal-content-dev').classList.remove('hidden');
+                updateDevPreset();
+            } else if (category === 'branding') {
+                title.textContent = "Diseño Gráfico, Logos e Identidad";
+                subtitle.textContent = "Logotipos, Identidad Gráfica e Ilustración";
+                iconBox.className = "p-2 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-400";
+                icon.setAttribute('data-lucide', 'pen-tool');
+                document.getElementById('modal-content-branding').classList.remove('hidden');
+                updateBrandingPreset();
+            } else if (category === 'animation') {
+                title.textContent = "Calculadora de Animaciones";
+                subtitle.textContent = "Cálculo por duración, elementos y formato";
+                iconBox.className = "p-2 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-400";
+                icon.setAttribute('data-lucide', 'clapperboard');
+                document.getElementById('modal-content-animation').classList.remove('hidden');
+                calculateAnimationQuote();
+            } else if (category === 'video') {
+                title.textContent = "Calculadora de Edición de Video";
+                subtitle.textContent = "Por duración en minutos, red social y nivel";
+                iconBox.className = "p-2 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-400";
+                icon.setAttribute('data-lucide', 'video');
+                document.getElementById('modal-content-video').classList.remove('hidden');
+                calculateVideoQuote();
+            } else if (category === 'nfc') {
+                title.textContent = "Productos con Tecnología NFC";
+                subtitle.textContent = "Hardware inteligente y programación de chips";
+                iconBox.className = "p-2 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-400";
+                icon.setAttribute('data-lucide', 'nfc');
+                document.getElementById('modal-content-nfc').classList.remove('hidden');
+                updateNfcPreset();
+            } else if (category === 'laser') {
+                title.textContent = "Calculadora Corte / Grabado Láser";
+                subtitle.textContent = "Láminas MDF 40×40 cm + Acabado de Pintura";
+                iconBox.className = "p-2 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-400";
+                icon.setAttribute('data-lucide', 'flame');
+                document.getElementById('modal-content-laser').classList.remove('hidden');
+                calculateLaserQuote();
+            } else if (category === 'digital') {
+                title.textContent = "Productos Digitales & Redes Sociales";
+                subtitle.textContent = "Fotografía, ilustración, portadas y contenido social";
+                iconBox.className = "p-2 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-400";
+                icon.setAttribute('data-lucide', 'image');
+                document.getElementById('modal-content-digital').classList.remove('hidden');
+                updateDigitalPreset();
+            } else if (category === 'ai_vision') {
+                title.textContent = "Cotizador Inteligente con Imagen";
+                subtitle.textContent = "Análisis visual de tamaño, material y precio competitivo";
+                iconBox.className = "p-2 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-400";
+                icon.setAttribute('data-lucide', 'scan-search');
+                document.getElementById('modal-content-ai_vision').classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeSpecialtyModal() {
+            const modal = document.getElementById('specialty-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // --- LÓGICA DESARROLLO & UI ---
+        function updateDevPreset() {
+            const type = document.getElementById('dev-type').value;
+            const preset = devPresets[type];
+            document.getElementById('dev-price').value = preset.price;
+            document.getElementById('dev-desc').value = preset.desc;
+        }
+
+        function insertDevItem() {
+            const type = document.getElementById('dev-type').value;
+            const preset = devPresets[type];
+            const qty = Math.max(1, parseFloat(document.getElementById('dev-qty').value) || 1);
+            const price = Math.max(0, parseFloat(document.getElementById('dev-price').value) || 0);
+            const desc = document.getElementById('dev-desc').value;
+
+            quoteItems.push({ id: Date.now(), name: preset.name, description: desc, qty, price });
+            renderItemsEditor();
+            updatePreview();
+            closeSpecialtyModal();
+            showToast("Servicio de desarrollo agregado");
+        }
+
+        // --- LÓGICA DISEÑO DE MARCA (Logos, Identidad, Ilustración) ---
+        function updateBrandingPreset() {
+            const type = document.getElementById('branding-type').value;
+            const preset = brandingPresets[type];
+            document.getElementById('branding-price').value = preset.price;
+            document.getElementById('branding-desc').value = preset.desc;
+        }
+
+        function insertBrandingItem() {
+            const type = document.getElementById('branding-type').value;
+            const preset = brandingPresets[type];
+            const qty = Math.max(1, parseFloat(document.getElementById('branding-qty').value) || 1);
+            const price = Math.max(0, parseFloat(document.getElementById('branding-price').value) || 0);
+            const desc = document.getElementById('branding-desc').value;
+
+            quoteItems.push({ id: Date.now(), name: preset.name, description: desc, qty, price });
+            renderItemsEditor();
+            updatePreview();
+            closeSpecialtyModal();
+            showToast("Servicio de diseño/marca agregado");
+        }
+
+        // --- LÓGICA ANIMACIONES (Duración, Elementos, Formato) ---
+        function calculateAnimationQuote() {
+            const currency = document.getElementById('currency-select').value;
+            const duration = Math.max(1, parseFloat(document.getElementById('anim-duration').value) || 1);
+            const secRate = Math.max(0, parseFloat(document.getElementById('anim-sec-rate').value) || 0);
+            const elemSelect = document.getElementById('anim-elements');
+            const elemMult = parseFloat(elemSelect.value) || 1;
+            const formatSelect = document.getElementById('anim-format');
+            const formatMult = parseFloat(formatSelect.options[formatSelect.selectedIndex].getAttribute('data-mult')) || 1;
+
+            const total = Math.round(duration * secRate * elemMult * formatMult);
+            animCurrentTotal = total;
+
+            const elemLabel = elemSelect.options[elemSelect.selectedIndex].text.split(' (')[0];
+            document.getElementById('anim-calc-detail').textContent = `${duration}s • Complejidad ${elemLabel}`;
+            document.getElementById('anim-total-price').textContent = formatMoney(total, currency);
+        }
+
+        function insertAnimationItem() {
+            const name = document.getElementById('anim-name').value.trim() || "Animación Motion Graphics";
+            const duration = Math.max(1, parseFloat(document.getElementById('anim-duration').value) || 1);
+            const elemSelect = document.getElementById('anim-elements');
+            const elemText = elemSelect.options[elemSelect.selectedIndex].text;
+            const formatText = document.getElementById('anim-format').value;
+
+            const description = `Duración: ${duration} segundos | Elementos/Complejidad: ${elemText} | Formato de entrega: ${formatText}.`;
+
+            quoteItems.push({
+                id: Date.now(),
+                name: `${name} (${duration}s)`,
+                description: description,
+                qty: 1,
+                price: animCurrentTotal
+            });
+
+            renderItemsEditor();
+            updatePreview();
+            closeSpecialtyModal();
+            showToast("Animación agregada a la cotización");
+        }
+
+        // --- LÓGICA EDICIÓN DE VIDEO (Duración en min, Red Social, Nivel) ---
+        function onVideoLevelChange() {
+            const levelSelect = document.getElementById('video-level');
+            const defaultRate = levelSelect.options[levelSelect.selectedIndex].getAttribute('data-rate');
+            document.getElementById('video-rate-min').value = defaultRate;
+            calculateVideoQuote();
+        }
+
+        function calculateVideoQuote() {
+            const currency = document.getElementById('currency-select').value;
+            const minutes = Math.max(0.5, parseFloat(document.getElementById('video-minutes').value) || 1);
+            const ratePerMin = Math.max(0, parseFloat(document.getElementById('video-rate-min').value) || 0);
+            const levelSelect = document.getElementById('video-level');
+            const levelLabel = levelSelect.options[levelSelect.selectedIndex].text.split(' (')[0];
+
+            const total = Math.round(minutes * ratePerMin);
+            videoCurrentTotal = total;
+
+            document.getElementById('video-calc-detail').textContent = `${minutes} min × ${formatMoney(ratePerMin, currency)}/min • ${levelLabel}`;
+            document.getElementById('video-total-price').textContent = formatMoney(total, currency);
+        }
+
+        function insertVideoItem() {
+            const name = document.getElementById('video-name').value.trim() || "Edición de Video";
+            const minutes = Math.max(0.5, parseFloat(document.getElementById('video-minutes').value) || 1);
+            const ratePerMin = Math.max(0, parseFloat(document.getElementById('video-rate-min').value) || 0);
+            const levelSelect = document.getElementById('video-level');
+            const levelFull = levelSelect.options[levelSelect.selectedIndex].text;
+            const socialFormat = document.getElementById('video-social').value;
+            const currency = document.getElementById('currency-select').value;
+
+            const description = `Duración final: ${minutes} min (${formatMoney(ratePerMin, currency)}/min) | Nivel: ${levelFull} | Formato/Red Social: ${socialFormat}.`;
+
+            quoteItems.push({
+                id: Date.now(),
+                name: `${name} (${minutes} min)`,
+                description: description,
+                qty: 1,
+                price: videoCurrentTotal
+            });
+
+            renderItemsEditor();
+            updatePreview();
+            closeSpecialtyModal();
+            showToast("Edición de video agregada");
+        }
+
+        // --- LÓGICA PRODUCTOS NFC ---
+        function updateNfcPreset() {
+            const type = document.getElementById('nfc-type').value;
+            const preset = nfcPresets[type];
+            document.getElementById('nfc-price').value = preset.price;
+            document.getElementById('nfc-desc').value = preset.desc;
+        }
+
+        function insertNfcItem() {
+            const type = document.getElementById('nfc-type').value;
+            const preset = nfcPresets[type];
+            const qty = Math.max(1, parseFloat(document.getElementById('nfc-qty').value) || 1);
+            const price = Math.max(0, parseFloat(document.getElementById('nfc-price').value) || 0);
+            const desc = document.getElementById('nfc-desc').value;
+
+            quoteItems.push({ id: Date.now(), name: preset.name, description: desc, qty, price });
+            renderItemsEditor();
+            updatePreview();
+            closeSpecialtyModal();
+            showToast("Producto NFC agregado");
+        }
+
+        // --- LÓGICA PRODUCTOS DIGITALES & REDES SOCIALES ---
+        function updateDigitalPreset() {
+            const type = document.getElementById('digital-type').value;
+            const preset = digitalPresets[type];
+            document.getElementById('digital-qty').value = preset.defaultQty || 1;
+            document.getElementById('digital-price').value = preset.price;
+            document.getElementById('digital-desc').value = preset.desc;
+        }
+
+        function insertDigitalItem() {
+            const type = document.getElementById('digital-type').value;
+            const preset = digitalPresets[type];
+            const qty = Math.max(1, parseFloat(document.getElementById('digital-qty').value) || 1);
+            const price = Math.max(0, parseFloat(document.getElementById('digital-price').value) || 0);
+            const desc = document.getElementById('digital-desc').value;
+
+            quoteItems.push({ id: Date.now(), name: preset.name, description: desc, qty, price });
+            renderItemsEditor();
+            updatePreview();
+            closeSpecialtyModal();
+            showToast("Producto digital agregado a la cotización");
+        }
+
+        // --- LÓGICA COTIZADOR INTELIGENTE POR IMAGEN Y CARACTERÍSTICAS (GEMINI API) ---
+        function handleAiImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            aiReferenceMimeType = file.type || "image/png";
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fullDataUrl = e.target.result;
+                aiReferenceBase64 = fullDataUrl.split(',')[1];
+
+                const preview = document.getElementById('ai-image-preview');
+                const placeholder = document.getElementById('ai-image-placeholder');
+                const btnRemove = document.getElementById('btn-remove-ai-img');
+
+                preview.src = fullDataUrl;
+                preview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                btnRemove.classList.remove('hidden');
+                showToast("Imagen de referencia cargada");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeAiImage() {
+            aiReferenceBase64 = "";
+            document.getElementById('ai-image-upload').value = "";
+            document.getElementById('ai-image-preview').classList.add('hidden');
+            document.getElementById('ai-image-placeholder').classList.remove('hidden');
+            document.getElementById('btn-remove-ai-img').classList.add('hidden');
+        }
+
+        async function analyzeImageAndQuote() {
+            const size = document.getElementById('ai-size').value.trim();
+            const material = document.getElementById('ai-material').value.trim();
+            const qty = Math.max(1, parseInt(document.getElementById('ai-qty').value) || 1);
+            const strategy = document.getElementById('ai-strategy').value;
+            const features = document.getElementById('ai-features').value.trim();
+            const currency = document.getElementById('currency-select').value;
+
+            if (!aiReferenceBase64 && !features && !material) {
+                showToast("Sube una imagen o describe las características del proyecto", "error");
+                return;
+            }
+
+            const btnAnalyze = document.getElementById('btn-analyze-ai');
+            const loadingBox = document.getElementById('ai-loading-box');
+            const resultBox = document.getElementById('ai-result-box');
+
+            btnAnalyze.disabled = true;
+            btnAnalyze.classList.add('opacity-60');
+            loadingBox.classList.remove('hidden');
+            resultBox.classList.add('hidden');
+
+            const systemPrompt = `Eres un experto valuador de proyectos creativos, tecnológicos, diseño gráfico, multimedia, productos NFC y fabricación láser en México (moneda ${currency}, referencia MXN).
+Tu tarea es analizar la imagen adjunta (si existe) y las características proporcionadas (tamaño, material, cantidad, acabados) para calcular un precio unitario competitivo frente al mercado pero que garantice un margen de ganancia sano y conveniente para el estudio/taller.
+Considera estas referencias internas del taller si aplican:
+- Láminas MDF de 40x40 cm (~$65 MXN por hoja) + tiempo de corte/grabado láser (~$6/min).
+- Acabado de pintura manual: $100 MXN por cada media hora implementada.
+- Productos NFC (tarjetas, tags, expositores): entre $85 y $450 MXN según acabado y programación.
+- Diseño gráfico, ilustración, edición de foto/video, animación y desarrollo web/UI según complejidad y horas de producción.
+Devuelve únicamente el objeto JSON estructurado solicitado.`;
+
+            const userPrompt = `Analiza este requerimiento y genera una cotización comparativa:
+- Tamaño / Dimensiones: ${size || "A estimar según imagen/descripción"}
+- Material / Tecnología: ${material || "A estimar según imagen/descripción"}
+- Cantidad de unidades: ${qty}
+- Estrategia deseada: ${strategy}
+- Características y detalles adicionales: ${features || "Analizar directamente desde la imagen adjunta"}
+Calcula el costo base de producción unitario, el precio promedio en el mercado unitario y el precio unitario óptimo sugerido (competitivo para el cliente pero rentable para el proveedor).`;
+
+            const parts = [{ text: userPrompt }];
+            if (aiReferenceBase64) {
+                parts.push({
+                    inlineData: {
+                        mimeType: aiReferenceMimeType,
+                        data: aiReferenceBase64
+                    }
+                });
+            }
+
+            const payload = {
+                contents: [{ role: "user", parts: parts }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            conceptTitle: { type: "STRING" },
+                            technicalDescription: { type: "STRING" },
+                            baseCostUnit: { type: "NUMBER" },
+                            suggestedCompetitiveUnit: { type: "NUMBER" },
+                            marketAverageUnit: { type: "NUMBER" },
+                            profitAdvantageLabel: { type: "STRING" },
+                            comparativeJustification: { type: "STRING" }
+                        },
+                        required: [
+                            "conceptTitle",
+                            "technicalDescription",
+                            "baseCostUnit",
+                            "suggestedCompetitiveUnit",
+                            "marketAverageUnit",
+                            "profitAdvantageLabel",
+                            "comparativeJustification"
+                        ]
+                    }
+                }
+            };
+
+            const customKeyEl = document.getElementById('ai-custom-apikey');
+            const apiKey = (customKeyEl && customKeyEl.value.trim()) ? customKeyEl.value.trim() : "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            try {
+                let response = null;
+                let delay = 1000;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    response = await fetch(apiUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) break;
+                    if (response.status === 429 || response.status >= 500) {
+                        await new Promise(r => setTimeout(r, delay));
+                        delay *= 2;
+                    } else {
+                        break;
+                    }
+                }
+
+                if (!response || !response.ok) {
+                    throw new Error("No se pudo completar el análisis");
+                }
+
+                const result = await response.json();
+                const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!jsonText) throw new Error("Respuesta vacía");
+
+                const parsed = JSON.parse(jsonText);
+                aiLastSuggestion = parsed;
+
+                document.getElementById('ai-res-title').textContent = parsed.conceptTitle;
+                document.getElementById('ai-res-badge').textContent = parsed.profitAdvantageLabel || "Precio Óptimo";
+                document.getElementById('ai-res-base').textContent = formatMoney(parsed.baseCostUnit, currency);
+                document.getElementById('ai-res-suggested').textContent = formatMoney(parsed.suggestedCompetitiveUnit, currency);
+                document.getElementById('ai-res-market').textContent = formatMoney(parsed.marketAverageUnit, currency);
+                document.getElementById('ai-res-analysis').textContent = parsed.comparativeJustification;
+                document.getElementById('ai-res-final-price').value = Number(parsed.suggestedCompetitiveUnit).toFixed(2);
+                updateAiBatchPreview();
+
+                resultBox.classList.remove('hidden');
+                showToast("Análisis comparativo listo");
+            } catch (err) {
+                showToast("No se pudo conectar con el analizador. Verifica tu conexión o API Key.", "error");
+            } finally {
+                btnAnalyze.disabled = false;
+                btnAnalyze.classList.remove('opacity-60');
+                loadingBox.classList.add('hidden');
+            }
+        }
+
+        function updateAiBatchPreview() {
+            if (!aiLastSuggestion) return;
+            const currency = document.getElementById('currency-select').value;
+            const qty = Math.max(1, parseInt(document.getElementById('ai-qty').value) || 1);
+            const finalUnit = Math.max(0, parseFloat(document.getElementById('ai-res-final-price').value) || 0);
+            const totalBatch = finalUnit * qty;
+            const marketTotal = (aiLastSuggestion.marketAverageUnit || 0) * qty;
+            const clientSavings = Math.max(0, marketTotal - totalBatch);
+
+            document.getElementById('ai-res-qty-label').textContent = qty;
+            document.getElementById('ai-res-batch-total').textContent = formatMoney(totalBatch, currency);
+            document.getElementById('ai-res-savings').textContent = clientSavings > 0
+                ? `Ahorro competitivo vs. mercado: ${formatMoney(clientSavings, currency)}`
+                : `Tarifa competitiva personalizada`;
+        }
+
+        function insertAiItem() {
+            if (!aiLastSuggestion) return;
+            const qty = Math.max(1, parseInt(document.getElementById('ai-qty').value) || 1);
+            const finalPrice = Math.max(0, parseFloat(document.getElementById('ai-res-final-price').value) || aiLastSuggestion.suggestedCompetitiveUnit);
+
+            quoteItems.push({
+                id: Date.now(),
+                name: aiLastSuggestion.conceptTitle,
+                description: aiLastSuggestion.technicalDescription,
+                qty: qty,
+                price: finalPrice
+            });
+
+            renderItemsEditor();
+            updatePreview();
+            closeSpecialtyModal();
+            showToast("Cotización inteligente agregada");
+        }
+
+        // --- LÓGICA CALCULADORA LÁSER MDF 40x40 CM + PINTURA ---
+        function togglePaintInput() {
+            const hasPaint = document.getElementById('laser-has-paint').value === 'yes';
+            const box = document.getElementById('laser-paint-box');
+            if (hasPaint) {
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        function calculateLaserQuote() {
+            const currency = document.getElementById('currency-select').value;
+            const w = Math.min(40, Math.max(0.5, parseFloat(document.getElementById('laser-width').value) || 10));
+            const h = Math.min(40, Math.max(0.5, parseFloat(document.getElementById('laser-height').value) || 10));
+            const qty = Math.max(1, parseInt(document.getElementById('laser-qty').value) || 1);
+            const process = document.getElementById('laser-process').value;
+            const sheetCost = Math.max(0, parseFloat(document.getElementById('laser-sheet-cost').value) || 0);
+            const minRate = Math.max(0, parseFloat(document.getElementById('laser-min-rate').value) || 0);
+            const hasPaint = document.getElementById('laser-has-paint').value === 'yes';
+            const paintHalfHours = hasPaint ? Math.max(1, parseInt(document.getElementById('laser-paint-halfhours').value) || 1) : 0;
+
+            // Área útil de lámina 40x40cm considerando margen de seguridad y kerf (39.2 x 39.2 cm)
+            const usable = 39.2;
+            const spacing = 0.3; // 3mm entre piezas
+
+            // Orientación normal vs rotada 90° para aprovechar mejor la lámina
+            const fitNormal = Math.floor((usable + spacing) / (w + spacing)) * Math.floor((usable + spacing) / (h + spacing));
+            const fitRotated = Math.floor((usable + spacing) / (h + spacing)) * Math.floor((usable + spacing) / (w + spacing));
+            const piecesPerSheet = Math.max(1, fitNormal, fitRotated);
+
+            const sheetsNeeded = Math.ceil(qty / piecesPerSheet);
+
+            // Estimación de tiempo de máquina láser
+            const perimeter = 2 * (w + h);
+            const area = w * h;
+            let minsPerPiece = 0;
+
+            if (process === 'cut') {
+                minsPerPiece = (perimeter / 35) + 0.3;
+            } else if (process === 'cut_engrave') {
+                minsPerPiece = (perimeter / 35) + (area / 55) + 0.5;
+            } else {
+                minsPerPiece = (perimeter / 35) + (area / 22) + 0.8;
+            }
+
+            const totalLaserMinutes = Math.ceil(minsPerPiece * qty);
+            const materialTotalCost = sheetsNeeded * sheetCost;
+            const laserMachineCost = totalLaserMinutes * minRate;
+            const paintTotalCost = paintHalfHours * 100; // $100 por cada media hora
+
+            const grandTotal = materialTotalCost + laserMachineCost + paintTotalCost;
+            const unitPrice = grandTotal / qty;
+
+            laserCurrentCalc = {
+                total: grandTotal,
+                unitPrice: unitPrice,
+                sheets: sheetsNeeded,
+                piecesPerSheet: piecesPerSheet,
+                laserMinutes: totalLaserMinutes,
+                paintHalfHours: paintHalfHours,
+                paintCost: paintTotalCost
+            };
+
+            // Actualizar UI de la calculadora
+            document.getElementById('calc-pieces-per-sheet').textContent = `${piecesPerSheet} pieza(s) / hoja`;
+            document.getElementById('calc-sheets-needed').textContent = `${sheetsNeeded} hoja(s)`;
+            document.getElementById('calc-laser-time').textContent = `${totalLaserMinutes} min`;
+            document.getElementById('calc-paint-cost').textContent = formatMoney(paintTotalCost, currency);
+            document.getElementById('calc-total-price').textContent = formatMoney(grandTotal, currency);
+            document.getElementById('calc-unit-price').textContent = `(${formatMoney(unitPrice, currency)} por pieza)`;
+
+            if (hasPaint) {
+                const hrs = (paintHalfHours * 0.5).toFixed(1);
+                document.getElementById('laser-paint-summary').textContent = `${hrs} hr(s) total = +${formatMoney(paintTotalCost, currency)}`;
+            }
+        }
+
+        function insertLaserItem() {
+            const name = document.getElementById('laser-name').value.trim() || "Corte / Grabado Láser MDF";
+            const w = document.getElementById('laser-width').value;
+            const h = document.getElementById('laser-height').value;
+            const qty = Math.max(1, parseInt(document.getElementById('laser-qty').value) || 1);
+            const processSelect = document.getElementById('laser-process');
+            const processLabel = processSelect.options[processSelect.selectedIndex].text;
+            const hasPaint = document.getElementById('laser-has-paint').value === 'yes';
+
+            let paintNote = "Sin acabado de pintura (MDF natural).";
+            if (hasPaint) {
+                const hrs = (laserCurrentCalc.paintHalfHours * 0.5).toFixed(1);
+                paintNote = `Incluye acabado de pintura (${laserCurrentCalc.paintHalfHours} medias horas / ${hrs} hrs).`;
+            }
+
+            const description = `Medidas: ${w}×${h} cm | Proceso: ${processLabel} | Material: ${laserCurrentCalc.sheets} lámina(s) MDF 40×40 cm (${laserCurrentCalc.piecesPerSheet} pzas/hoja) | Tiempo láser est.: ${laserCurrentCalc.laserMinutes} min. ${paintNote}`;
+
+            quoteItems.push({
+                id: Date.now(),
+                name: `${name} (${w}×${h} cm)`,
+                description: description,
+                qty: qty,
+                price: Number(laserCurrentCalc.unitPrice.toFixed(2))
+            });
+
+            renderItemsEditor();
+            updatePreview();
+            closeSpecialtyModal();
+            showToast("Proyecto de corte láser agregado");
+        }
+
+        // --- GESTIÓN DE ITEMS EN EL EDITOR ---
+        function renderItemsEditor() {
+            const container = document.getElementById('items-container');
+            container.innerHTML = '';
+
+            quoteItems.forEach((item, index) => {
+                const itemCard = document.createElement('div');
+                itemCard.className = "p-3.5 bg-slate-950/75 border border-slate-800 rounded-xl space-y-2.5 relative group transition-all hover:border-amber-500/40";
+                
+                itemCard.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex-1">
+                            <input type="text" value="${escapeHtml(item.name)}" oninput="updateItemField(${index}, 'name', this.value)" placeholder="Nombre del servicio o concepto" class="w-full px-3 py-1.5 text-sm font-semibold text-white placeholder-slate-500 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                        </div>
+                        <button type="button" onclick="removeItem(${index})" title="Eliminar concepto" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 rounded-lg transition-colors">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <textarea rows="2" oninput="updateItemField(${index}, 'description', this.value)" placeholder="Descripción breve de entregables o alcance..." class="w-full px-3 py-1.5 text-xs text-slate-300 placeholder-slate-500 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none resize-none">${escapeHtml(item.description)}</textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-0.5">Cantidad</label>
+                            <input type="number" value="${item.qty}" min="1" step="any" oninput="updateItemField(${index}, 'qty', parseFloat(this.value) || 0)" class="w-full px-3 py-1.5 text-sm text-white bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-0.5">Precio Unitario</label>
+                            <input type="number" value="${item.price}" min="0" step="any" oninput="updateItemField(${index}, 'price', parseFloat(this.value) || 0)" class="w-full px-3 py-1.5 text-sm font-semibold text-amber-300 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 outline-none">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(itemCard);
+            });
+
+            lucide.createIcons();
+        }
+
+        function addItem() {
+            quoteItems.push({
+                id: Date.now(),
+                name: "",
+                description: "",
+                qty: 1,
+                price: 0
+            });
+            renderItemsEditor();
+            updatePreview();
+        }
+
+        function removeItem(index) {
+            if (quoteItems.length <= 1) {
+                showToast("Debe existir al menos un concepto en la cotización", "error");
+                return;
+            }
+            quoteItems.splice(index, 1);
+            renderItemsEditor();
+            updatePreview();
+        }
+
+        function updateItemField(index, field, value) {
+            quoteItems[index][field] = value;
+            updatePreview();
+        }
+
+        // --- ACTUALIZACIÓN DE VISTA PREVIA Y CÁLCULOS ---
+        function updatePreview() {
+            const currency = document.getElementById('currency-select').value;
+            const brandColor = document.getElementById('brand-color').value;
+
+            // Aplicar color de marca en el documento
+            document.getElementById('doc-header-border').style.borderColor = brandColor;
+            document.getElementById('doc-badge').style.backgroundColor = brandColor;
+            document.getElementById('doc-total').style.color = brandColor;
+
+            // Datos del Negocio
+            const bizName = document.getElementById('biz-name').value.trim() || "Tu Empresa S.A.";
+            const bizContact = document.getElementById('biz-contact').value.trim() || "hola@tuestudio.com • 55 1234 5678";
+            const bizTax = document.getElementById('biz-tax-id').value.trim() || "www.tuestudio.com";
+
+            document.getElementById('doc-biz-name').textContent = bizName;
+            document.getElementById('doc-sign-biz').textContent = bizName;
+            document.getElementById('doc-biz-contact').textContent = bizContact;
+            document.getElementById('doc-biz-tax').textContent = bizTax;
+
+            // Datos Cotización y Cliente
+            document.getElementById('doc-number').textContent = document.getElementById('quote-number').value || "COT-001";
+            
+            const rawDate = document.getElementById('quote-date').value;
+            if (rawDate) {
+                const [y, m, d] = rawDate.split('-');
+                document.getElementById('doc-date').textContent = `${d}/${m}/${y}`;
+            }
+
+            const validity = document.getElementById('quote-validity').value || "15";
+            document.getElementById('doc-validity').textContent = `${validity} días`;
+
+            document.getElementById('doc-client-name').textContent = document.getElementById('client-name').value.trim() || "Nombre del Cliente";
+            const contact = document.getElementById('client-contact').value.trim();
+            document.getElementById('doc-client-contact').textContent = contact ? `Atención a: ${contact}` : "";
+
+            document.getElementById('doc-project-title').textContent = document.getElementById('project-title').value.trim() || "Propuesta de Proyecto";
+            document.getElementById('doc-delivery').textContent = document.getElementById('delivery-time').value.trim() || "A convenir";
+
+            // Renderizar Tabla de Conceptos
+            const tbody = document.getElementById('doc-items-body');
+            tbody.innerHTML = '';
+
+            let subtotal = 0;
+
+            quoteItems.forEach(item => {
+                const lineTotal = (item.qty || 0) * (item.price || 0);
+                subtotal += lineTotal;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-3 pr-2 align-top">
+                        <p class="font-semibold text-slate-900">${escapeHtml(item.name || "Servicio / Concepto")}</p>
+                        ${item.description ? `<p class="text-xs text-slate-500 mt-0.5 leading-snug">${escapeHtml(item.description)}</p>` : ''}
+                    </td>
+                    <td class="py-3 px-2 text-center align-top text-slate-700">${item.qty || 0}</td>
+                    <td class="py-3 px-2 text-right align-top text-slate-700">${formatMoney(item.price || 0, currency)}</td>
+                    <td class="py-3 pl-2 text-right align-top font-semibold text-slate-900">${formatMoney(lineTotal, currency)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Cálculos de Descuento, IVA y Total
+            const discountRate = Math.max(0, parseFloat(document.getElementById('discount-rate').value) || 0);
+            const taxRate = Math.max(0, parseFloat(document.getElementById('tax-rate').value) || 0);
+
+            const discountAmount = subtotal * (discountRate / 100);
+            const taxableBase = Math.max(0, subtotal - discountAmount);
+            const taxAmount = taxableBase * (taxRate / 100);
+            const total = taxableBase + taxAmount;
+
+            document.getElementById('doc-subtotal').textContent = formatMoney(subtotal, currency);
+
+            const discountRow = document.getElementById('doc-discount-row');
+            if (discountRate > 0) {
+                discountRow.classList.remove('hidden');
+                document.getElementById('doc-discount-pct').textContent = discountRate;
+                document.getElementById('doc-discount-amount').textContent = `-${formatMoney(discountAmount, currency)}`;
+            } else {
+                discountRow.classList.add('hidden');
+            }
+
+            const taxRow = document.getElementById('doc-tax-row');
+            if (taxRate > 0) {
+                taxRow.classList.remove('hidden');
+                document.getElementById('doc-tax-pct').textContent = taxRate;
+                document.getElementById('doc-tax-amount').textContent = formatMoney(taxAmount, currency);
+            } else {
+                taxRow.classList.add('hidden');
+            }
+
+            document.getElementById('doc-total').textContent = formatMoney(total, currency);
+
+            // Condiciones
+            document.getElementById('doc-payment-terms').textContent = document.getElementById('payment-terms').value.trim() || "50% anticipo, 50% contra entrega";
+            document.getElementById('doc-conditions').textContent = document.getElementById('project-conditions').value;
+        }
+
+        // --- GESTIÓN DEL LOGO ---
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                businessLogoDataUrl = e.target.result;
+                applyLogoUI(businessLogoDataUrl);
+                showToast("Logotipo cargado correctamente");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function applyLogoUI(dataUrl) {
+            const thumb = document.getElementById('logo-preview-thumb');
+            const placeholder = document.getElementById('logo-placeholder');
+            const btnRemove = document.getElementById('btn-remove-logo');
+            const docLogo = document.getElementById('doc-logo');
+
+            if (dataUrl) {
+                thumb.src = dataUrl;
+                thumb.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                btnRemove.classList.remove('hidden');
+
+                docLogo.src = dataUrl;
+                docLogo.classList.remove('hidden');
+            } else {
+                thumb.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                btnRemove.classList.add('hidden');
+                docLogo.classList.add('hidden');
+            }
+        }
+
+        function removeLogo() {
+            businessLogoDataUrl = "";
+            document.getElementById('logo-upload').value = "";
+            applyLogoUI("");
+            showToast("Logotipo eliminado");
+        }
+
+        function setBrandColor(hexColor) {
+            const colorInput = document.getElementById('brand-color');
+            if (colorInput) {
+                colorInput.value = hexColor;
+                updatePreview();
+            }
+        }
+
+        function applyConditionPreset(presetKey) {
+            const preset = conditionPresets[presetKey];
+            if (!preset) return;
+            document.getElementById('delivery-time').value = preset.delivery;
+            document.getElementById('payment-terms').value = preset.payment;
+            document.getElementById('project-conditions').value = preset.text;
+            updatePreview();
+            showToast("Plantilla de condiciones aplicada");
+        }
+
+        // --- PERSISTENCIA EN NAVEGADOR (LOCALSTORAGE) ---
+        function saveCustomApiKey(val) {
+            try {
+                localStorage.setItem('cotizadorpro_gemini_key', val.trim());
+            } catch (e) {}
+        }
+
+        function loadCustomApiKey() {
+            try {
+                const storedKey = localStorage.getItem('cotizadorpro_gemini_key');
+                const input = document.getElementById('ai-custom-apikey');
+                if (storedKey && input) input.value = storedKey;
+            } catch (e) {}
+        }
+
+        function saveBusinessProfile() {
+            const profile = {
+                name: document.getElementById('biz-name').value,
+                contact: document.getElementById('biz-contact').value,
+                taxId: document.getElementById('biz-tax-id').value,
+                color: document.getElementById('brand-color').value,
+                logo: businessLogoDataUrl
+            };
+            try {
+                localStorage.setItem('cotizadorpro_profile', JSON.stringify(profile));
+                showToast("Datos y logo guardados permanentemente en este navegador");
+            } catch (e) {
+                showToast("Datos guardados en sesión (logo muy pesado para almacenamiento local)", "error");
+            }
+        }
+
+        function loadBusinessProfile() {
+            try {
+                const raw = localStorage.getItem('cotizadorpro_profile');
+                if (!raw) return;
+                const savedProfile = JSON.parse(raw);
+                document.getElementById('biz-name').value = savedProfile.name || "";
+                document.getElementById('biz-contact').value = savedProfile.contact || "";
+                document.getElementById('biz-tax-id').value = savedProfile.taxId || "";
+                if (savedProfile.color) document.getElementById('brand-color').value = savedProfile.color;
+                if (savedProfile.logo) {
+                    businessLogoDataUrl = savedProfile.logo;
+                    applyLogoUI(businessLogoDataUrl);
+                }
+            } catch (e) {}
+        }
+
+        // --- REINICIAR COTIZACIÓN ---
+        function resetQuote() {
+            document.getElementById('client-name').value = "";
+            document.getElementById('client-contact').value = "";
+            document.getElementById('project-title').value = "";
+            
+            const currentNum = document.getElementById('quote-number').value;
+            const match = currentNum.match(/(\d+)$/);
+            if (match) {
+                const nextNum = String(parseInt(match[1], 10) + 1).padStart(match[1].length, '0');
+                document.getElementById('quote-number').value = currentNum.replace(/\d+$/, nextNum);
+            }
+
+            quoteItems = [
+                { id: Date.now(), name: "", description: "", qty: 1, price: 0 }
+            ];
+            renderItemsEditor();
+            updatePreview();
+            showToast("Formulario listo para nueva cotización");
+        }
+
+        // --- EXPORTACIÓN A PDF ---
+        function exportToPDF() {
+            const element = document.getElementById('quote-document');
+            const quoteNum = document.getElementById('quote-number').value.trim() || 'Cotizacion';
+            const clientName = document.getElementById('client-name').value.trim().replace(/[^a-zA-Z0-9]/g, '_') || 'Cliente';
+            const filename = `${quoteNum}_${clientName}.pdf`;
+
+            const previewPanel = document.getElementById('preview-panel');
+            const wasHidden = previewPanel.classList.contains('hidden');
+            if (wasHidden) previewPanel.classList.remove('hidden');
+
+            showToast("Generando archivo PDF...");
+
+            const opt = {
+                margin: [0.4, 0.4, 0.4, 0.4],
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                if (wasHidden) previewPanel.classList.add('hidden');
+                showToast("PDF descargado con éxito");
+            }).catch(() => {
+                if (wasHidden) previewPanel.classList.add('hidden');
+                showToast("Error al generar PDF. Intenta usando el botón Imprimir.", "error");
+            });
+        }
+
+        // --- NAVEGACIÓN MÓVIL ---
+        function switchMobileTab(tab) {
+            const editorPanel = document.getElementById('editor-panel');
+            const previewPanel = document.getElementById('preview-panel');
+            const btnEdit = document.getElementById('btn-tab-edit');
+            const btnPreview = document.getElementById('btn-tab-preview');
+
+            if (tab === 'edit') {
+                editorPanel.classList.remove('hidden');
+                previewPanel.classList.add('hidden');
+                btnEdit.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 text-slate-950 shadow-xs transition-all";
+                btnPreview.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-300 hover:text-amber-300 transition-all";
+            } else {
+                editorPanel.classList.add('hidden');
+                previewPanel.classList.remove('hidden');
+                btnPreview.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 text-slate-950 shadow-xs transition-all";
+                btnEdit.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-300 hover:text-amber-300 transition-all";
+                updatePreview();
+            }
+        }
+
+        // --- UTILIDADES ---
+        function formatMoney(amount, currencySymbol) {
+            return `${currencySymbol}${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === "error" 
+                ? "bg-rose-950/95 text-rose-200 border border-rose-500/40" 
+                : "bg-slate-950/95 text-amber-300 border border-amber-400/50";
+            const iconName = type === "error" ? "alert-circle" : "check-circle-2";
+            const iconColor = type === "error" ? "text-rose-400" : "text-amber-400";
+
+            toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-xl shadow-black/50 flex items-center gap-2.5 text-sm font-medium toast-enter`;
+            toast.innerHTML = `
+                <i data-lucide="${iconName}" class="w-4 h-4 ${iconColor} shrink-0"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
