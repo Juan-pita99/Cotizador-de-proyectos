@@ -12,8 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- html2pdf.js para exportación directa a PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- html2canvas para exportación directa a imagen en alta calidad -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         body {
@@ -117,9 +117,9 @@
                     <i data-lucide="rotate-ccw" class="w-4 h-4 text-amber-400"></i>
                     <span class="hidden md:inline">Limpiar</span>
                 </button>
-                <button onclick="exportToPDF()" class="px-3.5 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 border border-amber-200/60 rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center gap-2">
-                    <i data-lucide="download" class="w-4 h-4 text-slate-950"></i>
-                    <span>Descargar PDF</span>
+                <button onclick="exportToImage()" class="px-3.5 py-2 text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 border border-amber-200/60 rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center gap-2">
+                    <i data-lucide="image-down" class="w-4 h-4 text-slate-950"></i>
+                    <span>Descargar Imagen</span>
                 </button>
             </div>
         </div>
@@ -2132,63 +2132,61 @@ Calcula el costo base de producción unitario, el precio promedio en el mercado 
             showToast("Formulario listo para nueva cotización");
         }
 
-        // --- EXPORTACIÓN A PDF ---
-        function exportToPDF() {
+        // --- EXPORTACIÓN A IMAGEN PNG EN ALTA CALIDAD ---
+        function exportToImage() {
             const sourceElement = document.getElementById('quote-document');
             const quoteNum = document.getElementById('quote-number').value.trim() || 'Cotizacion';
             const clientName = document.getElementById('client-name').value.trim().replace(/[^a-zA-Z0-9]/g, '_') || 'Cliente';
-            const filename = `${quoteNum}_${clientName}.pdf`;
+            const filename = `${quoteNum}_${clientName}.png`;
 
-            showToast("Generando archivo PDF...");
+            showToast("Generando imagen en alta calidad...");
 
-            // Crear contenedor temporal aislado en (0,0) para evitar páginas en blanco por scroll o contenedores ocultos en móvil
-            const printWrapper = document.createElement('div');
-            printWrapper.style.position = 'fixed';
-            printWrapper.style.top = '0';
-            printWrapper.style.left = '0';
-            printWrapper.style.width = '816px'; // Ancho Carta estándar a 96 DPI
-            printWrapper.style.backgroundColor = '#ffffff';
-            printWrapper.style.zIndex = '-9999';
-            printWrapper.style.pointerEvents = 'none';
+            // Clonar el documento en un contenedor limpio y visible fuera de flujo para evitar recortes o fallos en móvil
+            const renderWrapper = document.createElement('div');
+            renderWrapper.style.position = 'fixed';
+            renderWrapper.style.top = '0';
+            renderWrapper.style.left = '-9999px';
+            renderWrapper.style.width = '860px';
+            renderWrapper.style.backgroundColor = '#ffffff';
+            renderWrapper.style.padding = '0';
+            renderWrapper.style.margin = '0';
 
             const clonedDoc = sourceElement.cloneNode(true);
             clonedDoc.style.width = '100%';
             clonedDoc.style.boxShadow = 'none';
-            clonedDoc.style.border = 'none';
             clonedDoc.style.borderRadius = '0';
             clonedDoc.style.margin = '0';
-            clonedDoc.style.padding = '36px';
+            clonedDoc.style.padding = '44px';
             clonedDoc.style.backgroundColor = '#ffffff';
             clonedDoc.style.color = '#1e293b';
 
-            printWrapper.appendChild(clonedDoc);
-            document.body.appendChild(printWrapper);
+            renderWrapper.appendChild(clonedDoc);
+            document.body.appendChild(renderWrapper);
 
-            const opt = {
-                margin: [0.25, 0.25, 0.25, 0.25],
-                filename: filename,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: {
-                    scale: 2,
+            setTimeout(() => {
+                html2canvas(clonedDoc, {
+                    scale: 3, // Ultra alta definición (3x Retina)
                     useCORS: true,
                     backgroundColor: '#ffffff',
+                    logging: false,
                     scrollX: 0,
                     scrollY: 0,
-                    windowWidth: 816
-                },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
-
-            // Breve espera para asegurar renderizado de fuentes e imágenes clonadas
-            setTimeout(() => {
-                html2pdf().set(opt).from(clonedDoc).save().then(() => {
-                    document.body.removeChild(printWrapper);
-                    showToast("PDF descargado con éxito");
+                    windowWidth: 860
+                }).then(canvas => {
+                    const imageUrl = canvas.toDataURL('image/png', 1.0);
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = imageUrl;
+                    downloadLink.download = filename;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    document.body.removeChild(renderWrapper);
+                    showToast("Imagen PNG descargada en alta calidad");
                 }).catch(() => {
-                    if (document.body.contains(printWrapper)) {
-                        document.body.removeChild(printWrapper);
+                    if (document.body.contains(renderWrapper)) {
+                        document.body.removeChild(renderWrapper);
                     }
-                    showToast("Error al generar PDF. Intenta usando el botón Imprimir.", "error");
+                    showToast("No se pudo generar la imagen. Intenta de nuevo.", "error");
                 });
             }, 150);
         }
